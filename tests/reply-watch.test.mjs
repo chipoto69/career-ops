@@ -21,13 +21,13 @@ function setupWorkspace() {
   return { tmp, dataDir, trackerFile };
 }
 
-function runReplyWatch(tmp, trackerFile, candidatesFile = null, confirmInput = null) {
+function runReplyWatch(tmp, trackerFile, candidatesFile = null, input = '') {
   const args = candidatesFile ? [candidatesFile] : [];
   return spawnSync(NODE, [SCRIPT, ...args], {
     cwd: tmp,
+    input,
     encoding: 'utf-8',
     timeout: 30000,
-    input: confirmInput,
     env: { ...process.env, CAREER_OPS_TRACKER: trackerFile }
   });
 }
