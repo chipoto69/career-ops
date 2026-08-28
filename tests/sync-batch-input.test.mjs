@@ -14,7 +14,7 @@ console.log('\nsync-batch-input — pipeline "Pending" -> batch-input.tsv');
 
 try {
   const mod = await import(pathToFileURL(join(ROOT, 'sync-batch-input.mjs')).href);
-  const { parsePending, urlsFromTsv, planBatchRows, buildNotes, lineUrl, lineCompany, extractLabels, PENDING_RE } = mod;
+  const { parsePending, urlsFromTsv, planBatchRows, buildNotes, lineUrl, lineCompany, extractLabels, isSafePublicHttpUrl, PENDING_RE } = mod;
   const check = (label, cond) => (cond ? pass(label) : fail(label));
 
   // ── section-header matching (mirrors reconcile-pipeline's localized PENDING_RE) ──
@@ -25,14 +25,14 @@ try {
   check('a non-pending header is not matched', !PENDING_RE.test('## Processed'));
 
   // ── url / company / label extraction ──
-  check('bare URL parses', lineUrl('https://x.test/1') === 'https://x.test/1');
-  check('url stops at the first pipe', lineUrl('https://x.test/2 | Acme | Role') === 'https://x.test/2');
-  check('company is the second positional cell', lineCompany('https://x.test/3 | Acme | Role') === 'Acme');
-  check('a bare row has no company', lineCompany('https://x.test/4') === '');
-  const labels = extractLabels('https://x.test/5 | Acme | Role | note: curated | trust: 80 missing_apply_url');
+  check('bare URL parses', lineUrl('https://example.com/1') === 'https://example.com/1');
+  check('url stops at the first pipe', lineUrl('https://example.com/2 | Acme | Role') === 'https://example.com/2');
+  check('company is the second positional cell', lineCompany('https://example.com/3 | Acme | Role') === 'Acme');
+  check('a bare row has no company', lineCompany('https://example.com/4') === '');
+  const labels = extractLabels('https://example.com/5 | Acme | Role | note: curated | trust: 80 missing_apply_url');
   check('note label extracts', labels.note === 'curated');
   check('trust label extracts with flags', labels.trust === '80 missing_apply_url');
-  check('unlabelled rows yield no labels', Object.keys(extractLabels('https://x.test/6 | Acme | Role')).length === 0);
+  check('unlabelled rows yield no labels', Object.keys(extractLabels('https://example.com/6 | Acme | Role')).length === 0);
   check(
     'notes are labelled segments joined by pipes',
     buildNotes({ note: 'curated', trust: '80 missing_apply_url' }) === 'note: curated | trust: 80 missing_apply_url',
@@ -41,11 +41,11 @@ try {
   // ── parsePending: variable-width rows + localized headers ──
   const es = parsePending([
     '## Pendientes',
-    '- [ ] https://x.test/1',
-    '- [ ] https://x.test/2 | Acme | Backend Engineer | Remote',
-    '- [ ] https://x.test/3 | Beta | SA | Remote | 180000 | note: curated',
+    '- [ ] https://example.com/1',
+    '- [ ] https://example.com/2 | Acme | Backend Engineer | Remote',
+    '- [ ] https://example.com/3 | Beta | SA | Remote | 180000 | note: curated',
     '## Procesadas',
-    '- [x] https://x.test/4 | Gamma | Done',
+    '- [x] https://example.com/4 | Gamma | Done',
   ].join('\n'));
   check('three pending rows parsed under a Spanish header', es.length === 3);
   check('bare row has empty company/notes', es[0].company === '' && es[0].notes === '');
@@ -54,56 +54,69 @@ try {
 
   const processed = parsePending([
     '## Pending',
-    '- [ ] https://x.test/9 | Acme | Role',
+    '- [ ] https://example.com/9 | Acme | Role',
     '',
-    '- [ ] https://x.test/10 | Beta | Role | note: curated',
+    '- [ ] https://example.com/10 | Beta | Role | note: curated',
   ].join('\n'));
   check('blank lines are skipped', processed.length === 2);
+
+  check('public HTTPS URLs are accepted', isSafePublicHttpUrl('https://example.com/jobs/1'));
+  check('localhost URLs are rejected', !isSafePublicHttpUrl('http://localhost:3000/jobs'));
+  check('private IPv4 URLs are rejected', !isSafePublicHttpUrl('https://10.0.0.5/jobs'));
+  check('IPv4 shorthand loopback URLs are rejected', !isSafePublicHttpUrl('http://2130706433/jobs'));
+  check('IPv6 loopback URLs are rejected', !isSafePublicHttpUrl('http://[::1]/jobs'));
+  check('local/internal hostnames are rejected', !isSafePublicHttpUrl('https://metadata.google.internal/compute'));
+  const filtered = parsePending([
+    '## Pending',
+    '- [ ] http://127.0.0.1/admin | Bad | Role',
+    '- [ ] https://example.com/safe | Good | Role',
+  ].join('\n'));
+  check('unsafe pending URLs are filtered before batch rows are planned', filtered.length === 1 && filtered[0].url === 'https://example.com/safe');
 
   // ── urlsFromTsv (existing input + state) ──
   const inputTsv = [
     '# batch-input.tsv header comment',
-    'https://queued.test/1\tsource\ttopic\tnotes',
-    'https://queued.test/2\tpipeline\tCo\t',
+    'https://queued.example/1\tsource\ttopic\tnotes',
+    'https://queued.example/2\tpipeline\tCo\t',
     '',
   ].join('\n');
   const inputUrls = urlsFromTsv(inputTsv, 0);
-  check('existing input URLs are collected', inputUrls.has('https://queued.test/1'));
+  check('existing input URLs are collected', inputUrls.has('https://queued.example/1'));
   check('header comment and blanks are ignored', inputUrls.size === 2);
 
   const stateTsv = [
     'id\turl\tstatus\tstarted_at\tcompleted_at\treport_num\tscore\terror\tretries',
-    '1\thttps://done.test/1\tcompleted\t2026-08-25\t2026-08-25\t1\t3.5\t\t0',
+    '1\thttps://done.example/1\tcompleted\t2026-08-25\t2026-08-25\t1\t3.5\t\t0',
   ].join('\n');
   const stateUrls = urlsFromTsv(stateTsv, 1);
-  check('batch-state URLs are collected from column 2', stateUrls.has('https://done.test/1'));
+  check('batch-state URLs are collected from column 2', stateUrls.has('https://done.example/1'));
 
   // ── planBatchRows: dedupe + row format ──
   const pending = parsePending([
     '## Pending',
-    '- [ ] https://new.test/1 | Acme | Role',
-    '- [ ] https://queued.test/1 | Beta | Role',
-    '- [ ] https://new.test/3 | Gamma | Role | trust: 90 suspicious_domain',
-    '- [ ] https://new.test/2', // bare
+    '- [ ] https://new.example/1 | Acme | Role',
+    '- [ ] https://queued.example/1 | Beta | Role',
+    '- [ ] https://new.example/3 | Gamma | Role | trust: 90 suspicious_domain',
+    '- [ ] https://new.example/2', // bare
   ].join('\n'));
   const existing = new Set([...inputUrls, ...stateUrls]);
   const rows = planBatchRows(pending, existing);
   check('queued and processed URLs are deduped', rows.length === 3);
-  check('a fresh entry carries url/source/topic/notes tabs', rows[0].row === 'https://new.test/1\tpipeline\tAcme\t');
+  check('a fresh entry carries url/source/topic/notes tabs', rows[0].row === 'https://new.example/1\tpipeline\tAcme\t');
   check('labelled segments ride into notes', rows.some((r) => r.notes === 'trust: 90 suspicious_domain'));
-  check('a bare row keeps empty company and notes', rows.some((r) => r.row === 'https://new.test/2\tpipeline\t\t'));
+  check('a bare row keeps empty company and notes', rows.some((r) => r.row === 'https://new.example/2\tpipeline\t\t'));
   check('every row uses the pipeline source', rows.every((r) => r.row.includes('\tpipeline\t')));
 
   const duplicateRows = planBatchRows([
-    { url: 'https://dupe.test/1', company: 'A', notes: '' },
-    { url: 'https://dupe.test/1', company: 'B', notes: '' },
+    { url: 'https://dupe.example/1', company: 'A', notes: '' },
+    { url: 'https://dupe.example/1', company: 'B', notes: '' },
   ], new Set());
   check('duplicates inside one pending section are queued once', duplicateRows.length === 1);
 
   const unsafeFieldRows = planBatchRows([
-    { url: 'https://fields.test/1', company: 'Acme\tInc', notes: 'line1\nline2\rline3' },
+    { url: 'https://fields.example/1', company: 'Acme\tInc', notes: 'line1\nline2\rline3' },
   ], new Set());
-  check('embedded tabs/newlines are sanitized before TSV row construction', unsafeFieldRows[0].row === 'https://fields.test/1\tpipeline\tAcme Inc\tline1 line2 line3');
+  check('embedded tabs/newlines are sanitized before TSV row construction', unsafeFieldRows[0].row === 'https://fields.example/1\tpipeline\tAcme Inc\tline1 line2 line3');
   check('sanitized batch rows remain four columns', unsafeFieldRows[0].row.split('\t').length === 4);
 } catch (err) {
   fail(`sync-batch-input test suite threw: ${err?.message ?? err}`);
