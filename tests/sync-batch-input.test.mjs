@@ -93,6 +93,18 @@ try {
   check('labelled segments ride into notes', rows.some((r) => r.notes === 'trust: 90 suspicious_domain'));
   check('a bare row keeps empty company and notes', rows.some((r) => r.row === 'https://new.test/2\tpipeline\t\t'));
   check('every row uses the pipeline source', rows.every((r) => r.row.includes('\tpipeline\t')));
+
+  const duplicateRows = planBatchRows([
+    { url: 'https://dupe.test/1', company: 'A', notes: '' },
+    { url: 'https://dupe.test/1', company: 'B', notes: '' },
+  ], new Set());
+  check('duplicates inside one pending section are queued once', duplicateRows.length === 1);
+
+  const unsafeFieldRows = planBatchRows([
+    { url: 'https://fields.test/1', company: 'Acme\tInc', notes: 'line1\nline2\rline3' },
+  ], new Set());
+  check('embedded tabs/newlines are sanitized before TSV row construction', unsafeFieldRows[0].row === 'https://fields.test/1\tpipeline\tAcme Inc\tline1 line2 line3');
+  check('sanitized batch rows remain four columns', unsafeFieldRows[0].row.split('\t').length === 4);
 } catch (err) {
   fail(`sync-batch-input test suite threw: ${err?.message ?? err}`);
 }
