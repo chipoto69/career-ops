@@ -1,5 +1,6 @@
 // @ts-check
 /** @typedef {import('./_types.js').Provider} Provider */
+import { BROWSER_LIKE_MACOS_USER_AGENT } from './_http.mjs';
 
 // Feishu Jobs (飞书招聘, internal codename "ATSX"/"atsx-throne") careers
 // provider — hits the public `/api/v1/search/job/posts` JSON endpoint that
@@ -50,11 +51,9 @@ const DEFAULT_MAX_PAGES = 200;
 const INTER_PAGE_DELAY_MS = 300;
 // Sent unconditionally: a no-op on tenants without ByteDance's own domain's
 // UA-sniffing rule, required on jobs.bytedance.com itself (see header).
-// NOT the shared BROWSER_LIKE_USER_AGENT from _http.mjs — that one is a
-// Windows Chrome UA, and jobs.bytedance.com's rule rejects it (405, verified
-// live) while accepting this exact macOS Chrome UA string. The distinction
-// is load-bearing, not cosmetic — don't "simplify" this to the shared constant.
-const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+// The macOS variant is shared from _http.mjs so future CN providers can reuse
+// the same load-bearing WAF workaround without private UA drift.
+const BROWSER_UA = BROWSER_LIKE_MACOS_USER_AGENT;
 
 /**
  * Keep host validation shared by detect() and fetch(): an explicit provider

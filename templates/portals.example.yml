@@ -885,6 +885,8 @@ search_queries:
 #   tencent         careers.tencent.com  (zh-CN board; each keywords: entry queried server-side, results deduped)
 #   meituan         zhaopin.meituan.com  (zh-CN board; each keywords: entry queried server-side, results deduped)
 #   alibaba         talent.alibaba.com   (zh-CN board; each keywords: entry queried server-side, results deduped)
+#   feishu-jobs     jobs.bytedance.com / *.jobs.feishu.cn (Feishu Jobs tenant board; one tracked_company per tenant)
+#   mokahr          app.mokahr.com/(social-recruitment|campus-recruitment|apply)/<org>/<siteId> (MokaHR tenant board; one tracked_company per tenant)
 #   workday         <tenant>.wd<N>.myworkdayjobs.com[/<locale>]/<board>
 #   avature         <tenant>.avature.net  (branded host → provider: avature + api: the /careers/SearchJobs URL)
 #   amazon          amazon.jobs           (global board; provider: amazon + an amazon: filter block, see below)
@@ -975,6 +977,32 @@ search_queries:
 #   keywords: ["AI", "大模型"]   # each keyword is a separate server-side query, results deduped;
 #                                # omit keywords to pull the whole board
 #   max_pages: 30          # optional per-keyword page cap (100 posts/page, default 30)
+#   enabled: true
+#
+# - name: Example Feishu Jobs Co
+#   careers_url: https://example.jobs.feishu.cn       # any *.jobs.feishu.cn tenant, or https://jobs.bytedance.com
+#   keywords: ["AI", "大模型"]   # each keyword is a separate server-side query, results deduped;
+#                                # omit keywords to pull the whole board
+#   max_pages: 20          # optional per-keyword page cap (100 posts/page, default 200)
+#   enabled: true
+#
+# - name: ByteDance
+#   careers_url: https://jobs.bytedance.com           # live Feishu Jobs example; ATS-hosted URL is the public careers site
+#   keywords: ["AI", "Agent"]
+#   max_pages: 200
+#   enabled: true
+#
+# - name: Example MokaHR Co
+#   careers_url: https://app.mokahr.com/social-recruitment/exampleco/123456  # any allowed MokaHR tenant URL
+#   keywords: ["AI", "大模型"]   # each keyword is a separate server-side query, results deduped;
+#                                # omit keywords to pull the whole board
+#   max_pages: 10          # optional per-keyword page cap (50 posts/page, default 10)
+#   enabled: true
+#
+# - name: Moonshot AI
+#   careers_url: https://app.mokahr.com/apply/moonshot/148506  # live MokaHR example; one tenant/employer per entry
+#   keywords: ["AI", "Agent"]
+#   max_pages: 10
 #   enabled: true
 #
 # - name: 阿里巴巴 (Alibaba)

@@ -19,14 +19,14 @@ try {
   if (mokahr.id === 'mokahr') pass('mokahr.id is "mokahr"');
   else fail(`mokahr.id is ${JSON.stringify(mokahr.id)}`);
 
-  const social = mokahr.detect({ name: 'DeepSeek', careers_url: 'https://app.mokahr.com/social-recruitment/high-flyer/140576' });
-  if (social && social.url === 'https://app.mokahr.com/social-recruitment/high-flyer/140576') {
+  const social = mokahr.detect({ name: 'Example MokaHR Social Co', careers_url: 'https://app.mokahr.com/social-recruitment/exampleco/123456' });
+  if (social && social.url === 'https://app.mokahr.com/social-recruitment/exampleco/123456') {
     pass('mokahr.detect() claims a /social-recruitment/{org}/{id} tenant URL');
   } else {
     fail(`mokahr.detect() on social-recruitment URL returned ${JSON.stringify(social)}`);
   }
 
-  const apply = mokahr.detect({ name: '月之暗面', careers_url: 'https://app.mokahr.com/apply/moonshot/148506' });
+  const apply = mokahr.detect({ name: 'Example MokaHR Apply Co', careers_url: 'https://app.mokahr.com/apply/moonshot/148506' });
   if (apply && apply.url === 'https://app.mokahr.com/apply/moonshot/148506') {
     pass('mokahr.detect() claims a /apply/{org}/{id} tenant URL (alternate path prefix)');
   } else {
@@ -89,6 +89,12 @@ try {
     fail('mokahr.detect() should return null for a non-string careers_url');
   }
 
+  if (mokahr.detect({ name: 'X', careers_url: 'not a url' }) === null) {
+    pass('mokahr.detect() returns null for a malformed URL string');
+  } else {
+    fail('mokahr.detect() should reject malformed URL strings');
+  }
+
   // decryptMokaHrEnvelope() — build a synthetic AES-128-CBC envelope with the
   // same key size and fixed IV observed in production.
   const AES_IV = Buffer.from('de7c21ed8d6f50fe', 'utf8');
@@ -104,7 +110,7 @@ try {
     code: 0,
     success: true,
     data: {
-      jobStats: { orgId: 'high-flyer', total: 0 },
+      jobStats: { orgId: 'exampleco', total: 0 },
       jobs: [
         {
           id: '7dcd6fde-84f1-4deb-890c-f1f275df0efc',
@@ -141,8 +147,8 @@ try {
   else fail('decryptMokaHrEnvelope() should throw on a wrong-length key');
 
   // parseMokaHrJobs()
-  const tenantUrl = 'https://app.mokahr.com/social-recruitment/high-flyer/140576';
-  const jobs = parseMokaHrJobs(decrypted, 'DeepSeek', tenantUrl);
+  const tenantUrl = 'https://app.mokahr.com/social-recruitment/exampleco/123456';
+  const jobs = parseMokaHrJobs(decrypted, 'Example MokaHR Co', tenantUrl);
   if (jobs.length === 2) pass('parseMokaHrJobs() keeps titled+ID posts, drops incomplete ones');
   else fail(`parseMokaHrJobs() returned ${jobs.length} jobs, expected 2`);
 
@@ -207,7 +213,7 @@ try {
   // fetch() — limit/offset pagination, cross-keyword dedup, page caps
   // (mocked ctx: encrypt a synthetic envelope per call so fetch() exercises the
   // full decrypt path, not just a plaintext stub).
-  const MOKA_URL = 'https://app.mokahr.com/social-recruitment/high-flyer/140576';
+  const MOKA_URL = 'https://app.mokahr.com/social-recruitment/exampleco/123456';
   const mkJob = (id, title) => ({ id, title, locations: [{ cityName: '北京' }] });
   const mkCtx = (impl) => {
     const calls = [];
@@ -219,7 +225,7 @@ try {
         sleep: async (ms) => { sleeps.push(ms); },
         fetchJson: async (_url, opts) => {
           const body = JSON.parse(opts.body);
-          const call = { keyword: body.keyword, offset: body.offset, limit: body.limit, siteId: body.siteId, orgId: body.orgId };
+          const call = { keyword: body.keyword, offset: body.offset, limit: body.limit, siteId: body.siteId, orgId: body.orgId, redirect: opts.redirect };
           calls.push(call);
           const inner = impl(call, calls.length);
           return encryptFixture(inner, '00112233445566aa');
@@ -248,7 +254,7 @@ try {
         : Array.from({ length: 20 }, (_, i) => mkJob(`b${i}`, `岗位B${i}`)),
     },
   }));
-  const pagedJobs = await mokahr.fetch({ name: 'DeepSeek', careers_url: MOKA_URL, keywords: ['AI'] }, paged.ctx);
+  const pagedJobs = await mokahr.fetch({ name: 'Example MokaHR Co', careers_url: MOKA_URL, keywords: ['AI'] }, paged.ctx);
   if (pagedJobs.length === 70 && paged.calls.length === 2) {
     pass('mokahr.fetch() paginates via offset until a page returns fewer than 50 jobs (70 posts → 2 requests)');
   } else {
@@ -270,7 +276,7 @@ try {
     },
   }));
   const malformedFullPageJobs = await mokahr.fetch(
-    { name: 'DeepSeek', careers_url: MOKA_URL, keywords: ['AI'] },
+    { name: 'Example MokaHR Co', careers_url: MOKA_URL, keywords: ['AI'] },
     malformedFullPage.ctx,
   );
   if (malformedFullPageJobs.length === 50 && malformedFullPage.calls.length === 2) {
@@ -279,10 +285,16 @@ try {
     fail(`mokahr.fetch() malformed full page: ${malformedFullPageJobs.length} jobs, ${malformedFullPage.calls.length} requests`);
   }
 
-  if (paged.calls[0].siteId === 140576 && paged.calls[0].orgId === 'high-flyer') {
+  if (paged.calls[0].siteId === 123456 && paged.calls[0].orgId === 'exampleco') {
     pass('mokahr.fetch() extracts siteId/orgId from the tenant careers_url');
   } else {
     fail(`mokahr.fetch() siteId/orgId = ${JSON.stringify({ siteId: paged.calls[0].siteId, orgId: paged.calls[0].orgId })}`);
+  }
+
+  if (paged.calls.every(c => c.redirect === 'error')) {
+    pass('mokahr.fetch() refuses redirects on every request');
+  } else {
+    fail(`mokahr.fetch() redirect options = ${JSON.stringify(paged.calls.map(c => c.redirect))}`);
   }
 
   if (paged.sleeps.length === 1 && paged.sleeps[0] > 0) {
@@ -292,7 +304,7 @@ try {
   }
 
   const overlap = mkCtx(() => ({ success: true, data: { jobStats: { total: 0 }, jobs: [mkJob('dup', '重复岗位')] } }));
-  const overlapJobs = await mokahr.fetch({ name: 'DeepSeek', careers_url: MOKA_URL, keywords: ['AI', '大模型'] }, overlap.ctx);
+  const overlapJobs = await mokahr.fetch({ name: 'Example MokaHR Co', careers_url: MOKA_URL, keywords: ['AI', '大模型'] }, overlap.ctx);
   if (overlapJobs.length === 1 && overlap.calls.length === 2 && overlap.sleeps.length === 1) {
     pass('mokahr.fetch() dedupes across keywords and paces the keyword switch');
   } else {
@@ -300,7 +312,7 @@ try {
   }
 
   const capped = mkCtx(() => ({ success: true, data: { jobStats: { total: 0 }, jobs: Array.from({ length: 50 }, (_, i) => mkJob(`c${i}`, `岗位C${i}`)) } }));
-  await mokahr.fetch({ name: 'DeepSeek', careers_url: MOKA_URL, keywords: ['AI'], max_pages: 1 }, capped.ctx);
+  await mokahr.fetch({ name: 'Example MokaHR Co', careers_url: MOKA_URL, keywords: ['AI'], max_pages: 1 }, capped.ctx);
   if (capped.calls.length === 1) {
     pass('mokahr.fetch() honors entry.max_pages');
   } else {
@@ -309,7 +321,7 @@ try {
 
   const probe = mkCtx(() => ({ success: true, data: { jobStats: { total: 0 }, jobs: Array.from({ length: 50 }, (_, i) => mkJob(`d${i}`, `岗位D${i}`)) } }));
   probe.ctx.maxPages = 1;
-  const probeJobs = await mokahr.fetch({ name: 'DeepSeek', careers_url: MOKA_URL }, probe.ctx);
+  const probeJobs = await mokahr.fetch({ name: 'Example MokaHR Co', careers_url: MOKA_URL }, probe.ctx);
   if (probe.calls.length === 1 && !probe.calls[0].keyword && probeJobs.length === 50) {
     pass('mokahr.fetch() honors the ctx.maxPages probe hint and defaults to a whole-board (no keyword) query');
   } else {
@@ -320,7 +332,7 @@ try {
     if (keyword === '大模型') throw new Error('HTTP 503');
     return { success: true, data: { jobStats: { total: 0 }, jobs: [mkJob('e7', '幸存岗位')] } };
   });
-  const blipJobs = await mokahr.fetch({ name: 'DeepSeek', careers_url: MOKA_URL, keywords: ['AI', '大模型'] }, blip.ctx);
+  const blipJobs = await mokahr.fetch({ name: 'Example MokaHR Co', careers_url: MOKA_URL, keywords: ['AI', '大模型'] }, blip.ctx);
   if (blipJobs.length === 1 && blipJobs[0].title === '幸存岗位') {
     pass('mokahr.fetch() keeps already-collected jobs when a later request fails');
   } else {
@@ -330,7 +342,7 @@ try {
   const softFail = mkCtx(({ keyword }) => (keyword === '大模型'
     ? { success: false, code: 102, msg: '参数错误。{0}' }
     : { success: true, data: { jobStats: { total: 0 }, jobs: [mkJob('e8', '幸存岗位2')] } }));
-  const softFailJobs = await mokahr.fetch({ name: 'DeepSeek', careers_url: MOKA_URL, keywords: ['AI', '大模型'] }, softFail.ctx);
+  const softFailJobs = await mokahr.fetch({ name: 'Example MokaHR Co', careers_url: MOKA_URL, keywords: ['AI', '大模型'] }, softFail.ctx);
   if (softFailJobs.length === 1 && softFailJobs[0].title === '幸存岗位2') {
     pass('mokahr.fetch() treats an in-band success:false as a blip once jobs are collected');
   } else {
@@ -340,7 +352,7 @@ try {
   let firstFailThrew = false;
   const dead = mkCtx(() => { throw new Error('HTTP 500'); });
   try {
-    await mokahr.fetch({ name: 'DeepSeek', careers_url: MOKA_URL, keywords: ['AI'] }, dead.ctx);
+    await mokahr.fetch({ name: 'Example MokaHR Co', careers_url: MOKA_URL, keywords: ['AI'] }, dead.ctx);
   } catch { firstFailThrew = true; }
   if (firstFailThrew) {
     pass('mokahr.fetch() still throws when the very first request fails (dead board reads as failure)');

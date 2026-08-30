@@ -21,3 +21,12 @@ export const DEFAULT_USER_AGENT = 'Mozilla/5.0 (compatible; career-ops/1.0; +htt
  */
 export const BROWSER_LIKE_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36';
+
+/**
+ * macOS Chrome variant for providers whose WAF rejects the shared Windows
+ * Chrome fingerprint while accepting a browser-like macOS request (seen live:
+ * jobs.bytedance.com / Feishu Jobs). Keep it shared so CN providers do not
+ * grow private, drifting UA constants.
+ */
+export const BROWSER_LIKE_MACOS_USER_AGENT =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';

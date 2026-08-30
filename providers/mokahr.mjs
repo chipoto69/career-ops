@@ -53,7 +53,7 @@
 //   - There is no reliable total-count field: `data.jobStats.total` stays 0
 //     even when jobs are clearly present and paginating correctly (verified
 //     across all three tenants) — it is not wired to job count. Pagination
-//     therefore stops the same way lagou.mjs does: when a page returns fewer
+//     therefore stops the same way meituan.mjs does: when a page returns fewer
 //     jobs than requested, not via a total field.
 //   - The list payload's `jobDescription` field already carries the full JD
 //     as HTML — no per-job detail request needed (same idiom as
