@@ -112,7 +112,7 @@ try {
           commitment: '全职',
           department: { id: 1, name: 'AI院' },
           locations: [{ cityName: '拱墅区', provinceName: '浙江' }, { cityName: '海淀区', provinceName: '北京市' }],
-          jobDescription: '<p><strong>【工作职责】</strong></p><ul><li>负责多模态基座模型的迭代。</li></ul>',
+          jobDescription: '<p><strong>【工作职责】</strong></p><ul><li>负责多模态基座模型的迭代。</li></ul><p>&#252; &quot;safe&quot; &amp;lt;kept&gt; &lt;script&gt;alert(1)&lt;/script&gt;</p>',
           createdAt: '2026-06-25T14:23:06',
         },
         { id: '2', title: '无城市岗位', jobDescription: '<p>d</p>' },
@@ -169,6 +169,13 @@ try {
     pass('parseMokaHrJobs() packs commitment/department/plaintext-JD into description, HTML stripped');
   } else {
     fail(`parseMokaHrJobs() description = ${JSON.stringify(j1 && j1.description)}`);
+  }
+
+  if (j1 && j1.description.includes('ü "safe" &lt;kept> alert(1)')
+      && !j1.description.includes('&quot;') && !j1.description.includes('<script>')) {
+    pass('parseMokaHrJobs() decodes shared HTML entities without preserving entity-encoded tags');
+  } else {
+    fail(`parseMokaHrJobs() entity-decoded description = ${JSON.stringify(j1 && j1.description)}`);
   }
 
   if (j1 && j1.postedAt === undefined) {

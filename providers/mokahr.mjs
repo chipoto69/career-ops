@@ -74,6 +74,7 @@
 //     keywords: ["AI", "大模型", "Agent"]
 
 import { createDecipheriv } from 'crypto';
+import { decodeEntities } from './_html-entities.mjs';
 
 const API = 'https://app.mokahr.com/api/outer/ats-apply/website/jobs/v2';
 const DETAIL_HOST = 'app.mokahr.com';
@@ -192,14 +193,12 @@ export function parseMokaHrJobs(decrypted, companyName, tenantBaseUrl) {
 
 function stripHtml(html) {
   if (!html) return '';
-  return String(html)
+  const text = String(html)
     .replace(/<\/(p|li|div)>/gi, '\n')
     .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<[^>]+>/g, '');
+  return decodeEntities(text)
     .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 }
