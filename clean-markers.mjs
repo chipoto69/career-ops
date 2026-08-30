@@ -87,14 +87,21 @@ const USAGE = `Usage:
   node clean-markers.mjs audit <file...>            # report only, never modifies
   node clean-markers.mjs clean <file...>            # strip markers, then report
   node clean-markers.mjs clean --ascii <file...>    # also force plain-ASCII punctuation
+  node clean-markers.mjs audit -- -draft.md         # audit a dash-leading path
   node clean-markers.mjs --help                     # print this usage block and exit`;
 
 const argv = process.argv.slice(2);
-validateFlags(argv, KNOWN_FLAGS, USAGE);
+const endOfOptions = argv.indexOf('--');
+const flagArgs = endOfOptions === -1 ? argv : argv.slice(0, endOfOptions);
+validateFlags(flagArgs, KNOWN_FLAGS, USAGE);
 const mode = argv[0]==='clean' ? 'clean' : 'audit';
 const opts = { ascii:false };
 const files = [];
 for(let i=(argv[0]==='clean'||argv[0]==='audit')?1:0; i<argv.length; i++){
+  if(i === endOfOptions){
+    files.push(...argv.slice(i + 1));
+    break;
+  }
   if(argv[i]==='--ascii') opts.ascii = true;
   else files.push(argv[i]);
 }

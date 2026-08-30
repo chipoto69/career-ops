@@ -12,7 +12,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -125,6 +125,28 @@ test('clean-markers.mjs still exits 2 with usage when given no files', () => {
 test('clean-markers.mjs still accepts --ascii as a known flag', () => {
   const r = runScript('clean-markers.mjs', 'clean', '--ascii', join(tmpdir(), 'career-ops-no-such-file.md'));
   assert.doesNotMatch(r.all, /unrecognized flag/i, '--ascii must not be rejected as unrecognized');
+});
+
+test('clean-markers.mjs audits a dash-leading path after --', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'career-ops-clean-markers-'));
+  try {
+    const dashPath = join(dir, '-draft.md');
+    writeFileSync(dashPath, 'plain text\n');
+
+    const r = runScript('clean-markers.mjs', 'audit', '--', dashPath);
+    assert.equal(r.status, 0, `dash-leading path exited ${r.status}, want 0\n${r.all}`);
+    assert.doesNotMatch(r.all, /unrecognized flag/i, 'dash-leading path after -- must not be parsed as a flag');
+    assert.match(r.all, /PASS/, 'dash-leading path should be audited normally');
+    assert.ok(r.all.includes(dashPath), 'output should name the audited dash-leading path');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('clean-markers.mjs still rejects unknown flags before --', () => {
+  const r = runScript('clean-markers.mjs', 'audit', '--dryrun', '--', join(tmpdir(), '-draft.md'));
+  assert.equal(r.status, 1, `unknown flag before -- exited ${r.status}, want 1`);
+  assert.match(r.all, /unrecognized flag\(s\): --dryrun/);
 });
 
 test('fix-slugs rejects unknown flags before checking or reading portals file', () => {
