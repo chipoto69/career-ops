@@ -340,13 +340,14 @@ export function parseTrackerRows(content) {
 export function analyze({ trackerContent, logContent, benchmarks, states, todayStr }) {
   const rows = parseTrackerRows(trackerContent);
   const stats = computeTrackerStats(trackerContent);
-  // Ledger-aware funnel when the transition log is present: a row now sitting in
-  // a terminal snapshot (Rejected/Discarded) still counts for the middle stages
-  // it passed through, so interviewRate/responseRate stop undercounting rejected-
-  // after-interview rows (#3493). Same canonical definition `node stats.mjs`
-  // uses; falls back to the snapshot funnel when there is no log.
-  const funnel = logContent && logContent.trim()
-    ? computeFunnelWithHistory(trackerStatusByNum(trackerContent), parseStatusLogStages(logContent))
+  // Ledger-aware funnel when the transition log contains parsed stages: a row
+  // now sitting in a terminal snapshot (Rejected/Discarded) still counts for the
+  // middle stages it passed through, so interviewRate/responseRate stop
+  // undercounting rejected-after-interview rows (#3493). Header-only, comment-only,
+  // or malformed logs fall back to snapshot math so the reported basis stays true.
+  const logStages = parseStatusLogStages(logContent);
+  const funnel = logStages.length > 0
+    ? computeFunnelWithHistory(trackerStatusByNum(trackerContent), logStages)
     : computeFunnel(stats.byStatus);
   const { observations, unparseable, unknownSources } = parseStatusLog(logContent, states);
   const timelines = foldObservations(observations);
@@ -652,6 +653,17 @@ function selfTest() {
   check(led.calibration.responseRate.ownPct === 12, `ledger-funnel: 3/25 reached Responded → 12%, got ${led.calibration.responseRate.ownPct}`);
   check(renderSummary(led, TODAY).includes('rates fold status-log history'), 'ledger-funnel: summary flags the folded basis');
   check(!renderSummary(snap, TODAY).includes('rates fold status-log history'), 'ledger-funnel: snapshot summary carries no fold note');
+  const headerOnly = analyze({ trackerContent: ledgerTracker, logContent: 'num\tdate\tfrom\tto\tsource\tnote\n# comment only', benchmarks: bm, states, todayStr: TODAY });
+  check(headerOnly.calibration.basis === 'snapshot', 'ledger-funnel: unparsable/header-only log → snapshot basis');
+  check(!renderSummary(headerOnly, TODAY).includes('rates fold status-log history'), 'ledger-funnel: empty parsed log carries no fold note');
+  const discardedTracker = `${ledgerHeader}\n${[
+    '| 1 | 2026-06-01 | DiscardedCo | Role | 4.0/5 | Discarded | ❌ | - | |',
+    ...Array.from({ length: 19 }, (_, i) => `| ${i + 2} | 2026-06-01 | AppliedCo${i + 2} | Role | 4.0/5 | Applied | ❌ | - | |`),
+  ].join('\n')}`;
+  const discardedLog = '2\t2026-06-02\tApplied\tApplied\tset-status\t';
+  const discarded = analyze({ trackerContent: discardedTracker, logContent: discardedLog, benchmarks: bm, states, todayStr: TODAY });
+  check(discarded.calibration.basis === 'ledger', 'ledger-funnel: valid log with Discarded current row → ledger basis');
+  check(discarded.calibration.everApplied === 20, `ledger-funnel: Discarded fallback counts as everApplied, got ${discarded.calibration.everApplied}`);
 
   // -- waiting --
   const waitTracker = [

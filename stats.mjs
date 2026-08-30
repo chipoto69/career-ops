@@ -227,7 +227,7 @@ export function computeFunnelWithHistory(statusByNum, ledger) {
   const reached = new Map(); // num → highest stage rank ever held (distinct rows)
   const bump = (num, rank) => { if (rank > (reached.get(num) || 0)) reached.set(num, rank); };
   for (const [num, status] of statusByNum) {
-    bump(num, STAGE_RANK[status] || (status === 'Rejected' ? 1 : 0));
+    bump(num, STAGE_RANK[status] || (status === 'Rejected' || status === 'Discarded' ? 1 : 0));
   }
   for (const { num, from, to } of ledger) {
     if (!statusByNum.has(num)) continue; // ledger row whose tracker row is gone
