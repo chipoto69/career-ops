@@ -112,6 +112,18 @@ try {
 
 const CONCURRENCY = 10;
 
+export function isIgnorableFsyncError(err, platform = process.platform) {
+  return platform === 'win32' && ['EACCES', 'EINVAL', 'ENOSYS', 'ENOTSUP', 'EPERM'].includes(err?.code);
+}
+
+function fsyncSyncBestEffort(fd) {
+  try {
+    fsyncSync(fd);
+  } catch (err) {
+    if (!isIgnorableFsyncError(err)) throw err;
+  }
+}
+
 export function atomicWriteFile(filePath, text) {
   const tempPath = `${filePath}.tmp-${process.pid}`;
   let fd = null;
@@ -121,15 +133,15 @@ export function atomicWriteFile(filePath, text) {
     fd = openSync(tempPath, 'w');
     if (existingMode !== null) fchmodSync(fd, existingMode);
     writeFileSync(fd, text, 'utf-8');
-    fsyncSync(fd);
+    fsyncSyncBestEffort(fd);
     closeSync(fd);
     fd = null;
     renameSync(tempPath, filePath);
     try {
       directoryFd = openSync(path.dirname(filePath), 'r');
-      fsyncSync(directoryFd);
+      fsyncSyncBestEffort(directoryFd);
     } catch (err) {
-      if (!['EINVAL', 'ENOTSUP', 'ENOSYS'].includes(err.code)) throw err;
+      if (!isIgnorableFsyncError(err)) throw err;
     } finally {
       if (directoryFd !== null) closeSync(directoryFd);
       directoryFd = null;

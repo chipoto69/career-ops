@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
-import { atomicWriteFile } from '../scan.mjs';
+import { atomicWriteFile, isIgnorableFsyncError } from '../scan.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SCAN = join(ROOT, 'scan.mjs');
@@ -60,6 +60,15 @@ test('atomicWriteFile preserves restrictive destination permissions', () => {
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test('Windows fsync EPERM is treated as unsupported durability, not a scan failure', () => {
+  assert.equal(isIgnorableFsyncError({ code: 'EPERM' }, 'win32'), true);
+  assert.equal(isIgnorableFsyncError({ code: 'EACCES' }, 'win32'), true);
+  assert.equal(isIgnorableFsyncError({ code: 'EINVAL' }, 'win32'), true);
+  assert.equal(isIgnorableFsyncError({ code: 'EPERM' }, 'darwin'), false);
+  assert.equal(isIgnorableFsyncError({ code: 'ENOSPC' }, 'win32'), false);
+  assert.equal(isIgnorableFsyncError(null, 'win32'), false);
 });
 
 test('--json emits exactly one clean successful receipt', () => {
