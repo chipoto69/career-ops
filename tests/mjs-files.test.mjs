@@ -22,7 +22,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -82,8 +82,20 @@ test('the syntax gate reaches past the repository root', () => {
     `gate must cover far more than the root: ${files.length} total vs ${rootOnly.length} at root`);
   assert.ok(files.some((f) => f.startsWith('tests/')), 'tests/ must be inside the gate');
   assert.ok(files.some((f) => f.startsWith('providers/')), 'providers/ must be inside the gate');
-  assert.ok(files.some((f) => f.startsWith('web/')), 'web/ must be inside the gate');
   assert.ok(files.some((f) => f.startsWith('lib/')), 'lib/ must be inside the gate');
+
+  // web/ is an UNTRACKED subproject — .gitignore names it ("e.g. web/ before it
+  // graduates to main"), `git ls-files web` is empty, and no web/ path appears
+  // in update-system.mjs's SYSTEM_PATHS. A plain checkout therefore does not
+  // have it, so asserting its presence unconditionally contradicts this file's
+  // own sibling assertion that the count is checkout-independent — and fails
+  // for every contributor who cloned without it. Guarded, not deleted: when the
+  // subproject IS present it must still be inside the gate, which is the
+  // property worth holding. Mirrors how test-all.mjs already reports it
+  // ("web/ not present in this checkout — skipping").
+  if (existsSync(join(ROOT, 'web'))) {
+    assert.ok(files.some((f) => f.startsWith('web/')), 'web/ is present and must be inside the gate');
+  }
 });
 
 test('both syntax checkers derive their file list from the shared collector', () => {
