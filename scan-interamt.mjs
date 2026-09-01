@@ -20,13 +20,24 @@
 import { chromium } from 'playwright';
 import { readFileSync, existsSync, mkdirSync } from 'fs';
 import * as yaml from 'js-yaml';
+import { join } from 'path';
 import { appendToPipeline, appendToScanHistory, loadSeenUrls } from './scan.mjs';
 import { localToday } from './lib/local-today.mjs';
+import { getCareerOpsRoot } from './path-resolver.mjs';
 
 // ── Config ───────────────────────────────────────────────────────────
 
-const PORTALS_PATH    = 'portals.yml';
-const SCAN_HISTORY    = 'data/scan-history.tsv';
+// Anchored to the data root, not the cwd, and using the same env overrides as
+// scan.mjs. This scanner WRITES through scan.mjs's appendToPipeline /
+// appendToScanHistory, which resolve against getCareerOpsRoot() — so with bare
+// relative paths the reads and the writes disagreed the moment the process was
+// started from anywhere but the repo root: it read an absent (or a different)
+// portals.yml and scan-history while still appending to the real ones. That is
+// silent keyword loss on the read side and every posting re-reported as new on
+// the dedup side.
+const DATA_ROOT       = getCareerOpsRoot();
+const PORTALS_PATH    = process.env.CAREER_OPS_PORTALS || join(DATA_ROOT, 'portals.yml');
+const SCAN_HISTORY    = process.env.CAREER_OPS_SCAN_HISTORY || join(DATA_ROOT, 'data/scan-history.tsv');
 const INTERAMT_HOME   = 'https://interamt.de/koop/app/';
 // Direct offer URL — constructed from StellenangebotId.
 // Wicket adds a session version number (?28&id=...) during live navigation,
@@ -204,12 +215,15 @@ async function searchInteramt(page, keyword, isFirst) {
   ]).catch(() => null);
 
   if (DEBUG) {
-    mkdirSync('output', { recursive: true });
-    await page.screenshot({ path: 'output/debug-interamt.png', fullPage: true });
+    const outDir = join(DATA_ROOT, 'output');
+    const shot = join(outDir, 'debug-interamt.png');
+    const dump = join(outDir, 'debug-interamt.html');
+    mkdirSync(outDir, { recursive: true });
+    await page.screenshot({ path: shot, fullPage: true });
     const { writeFileSync: wf } = await import('fs');
-    wf('output/debug-interamt.html', await page.content());
-    console.log('  [debug] screenshot → output/debug-interamt.png');
-    console.log('  [debug] html       → output/debug-interamt.html');
+    wf(dump, await page.content());
+    console.log('  [debug] screenshot →', shot);
+    console.log('  [debug] html       →', dump);
     console.log('  [debug] url:', page.url());
     const rowCount = await page.$$eval('tr', rows => rows.length);
     console.log(`  [debug] total <tr> on page: ${rowCount}`);
@@ -255,7 +269,9 @@ async function searchInteramt(page, keyword, isFirst) {
 // ── Main ─────────────────────────────────────────────────────────────
 
 async function main() {
-  mkdirSync('data', { recursive: true });
+  // The directory the appenders actually write into. `mkdirSync('data')`
+  // created one next to the cwd while scan.mjs wrote somewhere else entirely.
+  mkdirSync(join(DATA_ROOT, 'data'), { recursive: true });
 
   const { seen } = loadSeenUrls();
   const date = localToday();
