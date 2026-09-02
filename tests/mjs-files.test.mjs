@@ -84,17 +84,13 @@ test('the syntax gate reaches past the repository root', () => {
   assert.ok(files.some((f) => f.startsWith('providers/')), 'providers/ must be inside the gate');
   assert.ok(files.some((f) => f.startsWith('lib/')), 'lib/ must be inside the gate');
 
-  // web/ is an UNTRACKED subproject — .gitignore names it ("e.g. web/ before it
-  // graduates to main"), `git ls-files web` is empty, and no web/ path appears
-  // in update-system.mjs's SYSTEM_PATHS. A plain checkout therefore does not
-  // have it, so asserting its presence unconditionally contradicts this file's
-  // own sibling assertion that the count is checkout-independent — and fails
-  // for every contributor who cloned without it. Guarded, not deleted: when the
-  // subproject IS present it must still be inside the gate, which is the
-  // property worth holding. Mirrors how test-all.mjs already reports it
-  // ("web/ not present in this checkout — skipping").
+  // web/ is the one opt-in subproject in this list (#2360): tests/, providers/
+  // and lib/ ship with every install, but a checkout that never took the web UI
+  // has no web/ on disk. Assert it's inside the gate when it exists; when it
+  // doesn't, the invariant is vacuously true — the same conditional the adjacent
+  // 'web/ test discovery contract' check already uses instead of hardcoding it.
   if (existsSync(join(ROOT, 'web'))) {
-    assert.ok(files.some((f) => f.startsWith('web/')), 'web/ is present and must be inside the gate');
+    assert.ok(files.some((f) => f.startsWith('web/')), 'web/ must be inside the gate when present');
   }
 });
 

@@ -19,25 +19,23 @@
 
 import { chromium } from 'playwright';
 import { readFileSync, existsSync, mkdirSync } from 'fs';
-import * as yaml from 'js-yaml';
 import { join } from 'path';
-import { appendToPipeline, appendToScanHistory, loadSeenUrls } from './scan.mjs';
-import { localToday } from './lib/local-today.mjs';
+import * as yaml from 'js-yaml';
+import { appendToPipeline, appendToScanHistory, loadSeenUrls, PORTALS_PATH, SCAN_HISTORY_PATH } from './scan.mjs';
 import { getCareerOpsRoot } from './path-resolver.mjs';
+import { localToday } from './lib/local-today.mjs';
+import { isMainModule } from './lib/is-main-module.mjs';
 
 // ── Config ───────────────────────────────────────────────────────────
 
-// Anchored to the data root, not the cwd, and using the same env overrides as
-// scan.mjs. This scanner WRITES through scan.mjs's appendToPipeline /
-// appendToScanHistory, which resolve against getCareerOpsRoot() — so with bare
-// relative paths the reads and the writes disagreed the moment the process was
-// started from anywhere but the repo root: it read an absent (or a different)
-// portals.yml and scan-history while still appending to the real ones. That is
-// silent keyword loss on the read side and every posting re-reported as new on
-// the dedup side.
+// Both imported from scan.mjs (#3510). This scanner appends through
+// scan.mjs's appendToScanHistory — anchored to the data root — while reading its
+// own bare-relative copy to work out the last scan date, so within a single run
+// it could write one history file and read another. Its portals copy also
+// ignored CAREER_OPS_PORTALS, which #2271 added so a second search lane does not
+// poison the first one's dedup history.
+const SCAN_HISTORY    = SCAN_HISTORY_PATH;
 const DATA_ROOT       = getCareerOpsRoot();
-const PORTALS_PATH    = process.env.CAREER_OPS_PORTALS || join(DATA_ROOT, 'portals.yml');
-const SCAN_HISTORY    = process.env.CAREER_OPS_SCAN_HISTORY || join(DATA_ROOT, 'data/scan-history.tsv');
 const INTERAMT_HOME   = 'https://interamt.de/koop/app/';
 // Direct offer URL — constructed from StellenangebotId.
 // Wicket adds a session version number (?28&id=...) during live navigation,
@@ -215,15 +213,17 @@ async function searchInteramt(page, keyword, isFirst) {
   ]).catch(() => null);
 
   if (DEBUG) {
-    const outDir = join(DATA_ROOT, 'output');
-    const shot = join(outDir, 'debug-interamt.png');
-    const dump = join(outDir, 'debug-interamt.html');
-    mkdirSync(outDir, { recursive: true });
-    await page.screenshot({ path: shot, fullPage: true });
+    // output/ is User Layer, so the debug dump follows the data root rather than
+    // appearing in whatever directory the scan was launched from (#3510).
+    const debugDir = join(DATA_ROOT, 'output');
+    const debugPng = join(debugDir, 'debug-interamt.png');
+    const debugHtml = join(debugDir, 'debug-interamt.html');
+    mkdirSync(debugDir, { recursive: true });
+    await page.screenshot({ path: debugPng, fullPage: true });
     const { writeFileSync: wf } = await import('fs');
-    wf(dump, await page.content());
-    console.log('  [debug] screenshot →', shot);
-    console.log('  [debug] html       →', dump);
+    wf(debugHtml, await page.content());
+    console.log(`  [debug] screenshot → ${debugPng}`);
+    console.log(`  [debug] html       → ${debugHtml}`);
     console.log('  [debug] url:', page.url());
     const rowCount = await page.$$eval('tr', rows => rows.length);
     console.log(`  [debug] total <tr> on page: ${rowCount}`);
@@ -269,8 +269,6 @@ async function searchInteramt(page, keyword, isFirst) {
 // ── Main ─────────────────────────────────────────────────────────────
 
 async function main() {
-  // The directory the appenders actually write into. `mkdirSync('data')`
-  // created one next to the cwd while scan.mjs wrote somewhere else entirely.
   mkdirSync(join(DATA_ROOT, 'data'), { recursive: true });
 
   const { seen } = loadSeenUrls();
@@ -377,7 +375,15 @@ async function main() {
   console.log('\n→ Run /career-ops pipeline to evaluate new offers.');
 }
 
-main().catch(err => {
-  console.error('Fatal:', err.message);
-  process.exit(1);
-});
+// Guarded like every sibling scanner (scan-hn.mjs:122, scan-ats-full.mjs:1115).
+// Unguarded, merely IMPORTING this module drove a live browser scan of
+// interamt.de and appended its results to the user's pipeline and scan history —
+// so the file could not be imported by a test, or by anything else, without
+// doing that. A module should not scan the internet as a side effect of being
+// loaded (#3510).
+if (isMainModule(import.meta.url)) {
+  main().catch(err => {
+    console.error('Fatal:', err.message);
+    process.exit(1);
+  });
+}
