@@ -45,7 +45,7 @@
 import { execFileSync } from 'child_process';
 import { mkdtempSync, mkdirSync, writeFileSync, chmodSync, copyFileSync } from 'fs';
 import { tmpdir } from 'os';
-import { join, dirname } from 'path';
+import { join, dirname, delimiter as pathDelimiter } from 'path';
 import { fileURLToPath } from 'url';
 import { pass, fail, rmSync } from './helpers.mjs';
 
@@ -87,7 +87,7 @@ function runApply(dir, stubBin, extraEnv) {
       cwd: dir,
       encoding: 'utf-8',
       timeout: 30000,
-      env: { ...process.env, PATH: `${stubBin}:${process.env.PATH}`, ...extraEnv },
+      env: { ...process.env, PATH: `${stubBin}${pathDelimiter}${process.env.PATH}`, ...extraEnv },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     return { status: 0, stdout, stderr: '' };
