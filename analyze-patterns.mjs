@@ -544,7 +544,7 @@ requirement_importance:
     ['Arquetipo: Delivery Manager', REPORT_ARCHETYPE_RE, 'Delivery Manager'],
   ];
   for (const [line, re, expected] of headerCases) {
-    const got = line.match(re)?.[1] ?? null;
+    const got = re.exec(line)?.[1] ?? null;
     if (got !== expected) failures.push(`report header ${JSON.stringify(line)} → ${JSON.stringify(got)}, expected ${JSON.stringify(expected)}`);
   }
 
