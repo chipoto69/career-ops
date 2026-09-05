@@ -22,12 +22,12 @@ import path from "node:path";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const WEB = path.join(HERE, "..", "..");
-const LOADER = path.join(HERE, "..", "helpers", "web-ts-alias-loader.mjs");
+const LOADER = path.join(HERE, "..", "helpers", "register-web-ts-alias-loader.mjs");
 
 /** Run one ESM snippet in a fresh Node process. Never throws; reports the failure. */
 function run(src) {
   try {
-    return { ok: true, out: execFileSync(process.execPath, ["--input-type=module", "-e", src], {
+    return { ok: true, out: execFileSync(process.execPath, ["--experimental-strip-types", "--input-type=module", "-e", src], {
       cwd: WEB, encoding: "utf-8", timeout: 60000, stdio: ["ignore", "pipe", "pipe"],
     }).trim() };
   } catch (e) {

@@ -4,26 +4,19 @@
 // Node 22 already type-strips .ts on import — this hook is ONLY about specifier
 // resolution, not transpilation.
 //
-// Usage: import this module for side effect, THEN reach the aliased module with a
-// dynamic import, so the hook is installed before that specifier is resolved:
+// Usage: import the companion registration module for side effect, THEN reach
+// the aliased module with a dynamic import, so the hook is installed before
+// that specifier is resolved:
 //
-//   import "../helpers/web-ts-alias-loader.mjs";
+//   import "../helpers/register-web-ts-alias-loader.mjs";
 //   const { thing } = await import("../../src/lib/thing.ts");
 //
 // A static `import … from "…/thing.ts"` would NOT work: ESM resolves every static
 // specifier in a module before any of its bodies run, so the hook would still be
 // uninstalled at the moment it is needed.
-import { register } from "node:module";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { existsSync } from "node:fs";
 import path from "node:path";
-
-// register() re-imports THIS file in a separate loader realm to install the
-// resolve() hook below — guard so repeated imports only register once.
-if (!globalThis.__careerOpsWebAliasRegistered) {
-  globalThis.__careerOpsWebAliasRegistered = true;
-  register(import.meta.url, import.meta.url);
-}
 
 // Anchored to this file, not process.cwd(): `npm test` runs from web/ while a
 // root-level `node --test web/tests/…` runs from the repo root, and the alias
