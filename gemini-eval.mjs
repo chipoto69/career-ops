@@ -191,7 +191,11 @@ for (let i = 0; i < args.length; i++) {
     jdText = stripBom(readFileSync(filePath, 'utf-8')).trim();
   } else if (args[i] === '--model' && args[i + 1]) {
     modelName = args[++i];
-  } else if (args[i] === '--posting-url' && args[i + 1]) {
+  } else if (args[i] === '--posting-url') {
+    if (!args[i + 1] || args[i + 1].startsWith('--')) {
+      console.error('❌  --posting-url requires a complete http(s) URL value.');
+      process.exit(1);
+    }
     postingUrl = args[++i];
   } else if (args[i] === '--no-save') {
     saveReport = false;
@@ -301,7 +305,10 @@ function slugifyCompany(value) {
 function isPostingUrl(value) {
   try {
     const parsed = new URL(value);
-    return (parsed.protocol === 'http:' || parsed.protocol === 'https:') && parsed.hostname !== '';
+    return (parsed.protocol === 'http:' || parsed.protocol === 'https:')
+      && parsed.hostname !== ''
+      && parsed.username === ''
+      && parsed.password === '';
   } catch {
     return false;
   }

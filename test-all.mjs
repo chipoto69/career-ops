@@ -9800,6 +9800,22 @@ try {
   // hand every pasted row the same key.
   const urlHeaderRe  = /\*\*URL:\*\*/;
   const urlSourceRe  = /--posting-url|\bpostingUrl\b|\$\{input \|\| '\(pasted\)'\}/;
+  const geminiEval = join(ROOT, 'gemini-eval.mjs');
+  const runGeminiEval = (...argv) => spawnSync(NODE, [geminiEval, ...argv], {
+    cwd: ROOT,
+    env: { ...process.env, GEMINI_API_KEY: '' },
+    encoding: 'utf-8',
+    timeout: DEFAULT_SCRIPT_TIMEOUT_MS,
+  });
+  const geminiMissingPostingUrl = runGeminiEval('--posting-url', '--no-save', 'Senior engineer role');
+  const geminiCredentialPostingUrl = runGeminiEval('--posting-url', 'https://user:pass@example.com/jobs/42', '--no-save', 'Senior engineer role');
+  if (geminiMissingPostingUrl.status !== 1 || !geminiMissingPostingUrl.stderr.includes('--posting-url requires')) {
+    fail(`gemini-eval accepts --posting-url without a value: status=${geminiMissingPostingUrl.status}, stderr=${geminiMissingPostingUrl.stderr}`);
+  } else if (geminiCredentialPostingUrl.status !== 1 || !geminiCredentialPostingUrl.stderr.includes('--posting-url must be a complete http(s) URL')) {
+    fail(`gemini-eval accepts a credential-bearing posting URL: status=${geminiCredentialPostingUrl.status}, stderr=${geminiCredentialPostingUrl.stderr}`);
+  } else {
+    pass('gemini-eval rejects missing and credential-bearing --posting-url values before report generation');
+  }
   // openai-eval.mjs and ollama-eval.mjs gain the same header in #3797, which
   // owns those two files. Named rather than skipped, and the list is asserted
   // to be EXACTLY the files still missing the header: once #3797 lands this
