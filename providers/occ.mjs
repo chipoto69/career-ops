@@ -45,7 +45,6 @@ import { BROWSER_LIKE_USER_AGENT, fetchTextWithRetry } from './_http.mjs';
 import { decodeEntities } from './_html-entities.mjs';
 
 const ORIGIN = 'https://www.occ.com.mx';
-const DEFAULT_QUERIES = ['automatizacion', 'robotica', 'mecatronica', 'sistemas-embebidos', 'control'];
 const DEFAULT_MAX_PAGES = 3;
 const HARD_PAGE_CAP = 10;
 const INTER_PAGE_DELAY_MS = 750;
@@ -139,12 +138,18 @@ export default {
   id: 'occ',
 
   async fetch(entry, ctx) {
-    const queries = Array.isArray(entry.queries) && entry.queries.length
-      ? entry.queries : DEFAULT_QUERIES;
-    const states = Array.isArray(entry.states) && entry.states.length
-      ? entry.states : [null];
+    const cfg = /** @type {{queries?: unknown, states?: unknown, max_pages?: unknown}} */ (entry);
+    if (!Array.isArray(cfg.queries) || cfg.queries.length === 0) {
+      throw new Error('OCC provider requires queries: [...] because occ.com.mx is a broad relevance-sorted board');
+    }
+
+    const queries = cfg.queries;
+    const states = Array.isArray(cfg.states) && cfg.states.length
+      ? cfg.states : [null];
+    const configuredMaxPages = cfg.max_pages;
     const entryMaxPages = Math.min(
-      Number.isInteger(entry.max_pages) && entry.max_pages > 0 ? entry.max_pages : DEFAULT_MAX_PAGES,
+      typeof configuredMaxPages === 'number' && Number.isInteger(configuredMaxPages) && configuredMaxPages > 0
+        ? configuredMaxPages : DEFAULT_MAX_PAGES,
       HARD_PAGE_CAP,
     );
     const ctxMaxPages = ctx?.maxPages;

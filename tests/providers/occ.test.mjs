@@ -18,6 +18,15 @@ try {
   if (typeof occ.fetch === 'function') pass('occ.fetch is a function');
   else fail('occ.fetch is not a function');
 
+  let missingQueriesThrew = false;
+  try {
+    await occ.fetch({ name: 'OCC' }, { async fetchText() { return ''; } });
+  } catch (err) {
+    missingQueriesThrew = /requires queries/.test(err?.message || '');
+  }
+  if (missingQueriesThrew) pass('fetch() requires explicit queries for the broad relevance-sorted board');
+  else fail('fetch() did not require explicit queries');
+
   // ── URL shape ────────────────────────────────────────────────────────────
   // Page 1 carries no suffix.
   if (buildSearchUrl('automatizacion', null, 1) === 'https://www.occ.com.mx/empleos/de-automatizacion/') {
