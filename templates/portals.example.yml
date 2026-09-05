@@ -1305,6 +1305,13 @@ search_queries:
 #   provider: nodesk
 #   enabled: true
 #
+# - name: OCC Mundial                    # Mexico-wide board, server-rendered listings
+#   provider: occ                        # explicit provider; no host auto-detect
+#   queries: ["automatizacion", "robotica", "mecatronica"]
+#   states: ["nuevo-leon", "jalisco"]   # optional; omit for nationwide search
+#   max_pages: 3                         # optional, default 3, hard cap 10; health probes may bound lower
+#   enabled: true
+#
 # - name: We Work Remotely
 #   provider: weworkremotely
 #   enabled: true

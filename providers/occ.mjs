@@ -1,7 +1,7 @@
 // @ts-check
 /** @typedef {import('./_types.js').Provider} Provider */
 
-// OCC Mundial provider — occ.com.mx, the dominant general job board in Mexico.
+// OCC Mundial provider — occ.com.mx, a broad Mexican job board.
 //
 // Why this exists: a large share of Mexican employers (mid-size industrials,
 // domestic groups like Xignux and Deacero) never appear on Greenhouse, Lever,
@@ -10,11 +10,14 @@
 // of ATS probing can close.
 //
 // There is no public JSON API: /api/* returns 403. The search pages are
-// server-rendered HTML, so we parse the job cards out of the markup with the
-// same tiny-tag-extractor approach used by providers/weworkremotely.mjs and
-// providers/successfactors.mjs, rather than adding an HTML-parser dependency.
+// server-rendered HTML when the site allows the request, so we parse the job
+// cards out of the markup with the same tiny-tag-extractor approach used by
+// providers/weworkremotely.mjs and providers/successfactors.mjs, rather than
+// adding an HTML-parser dependency. If the first page stops looking like an OCC
+// result page, the provider throws instead of reporting a false healthy empty
+// board.
 //
-// URL shapes (both verified live 2026-09-03):
+// URL shapes:
 //   https://www.occ.com.mx/empleos/de-{keyword-slug}/
 //   https://www.occ.com.mx/empleos/de-{keyword-slug}/en-{state-slug}/
 // Pagination is a SLUG suffix, not a query parameter. `?page=2`, `?pagina=2`,
@@ -38,12 +41,14 @@
 //     states: ["nuevo-leon", "jalisco"]      # optional; omit for nationwide
 //     max_pages: 3                            # optional, default 3, hard cap 10
 
+import { BROWSER_LIKE_USER_AGENT, fetchTextWithRetry } from './_http.mjs';
 import { decodeEntities } from './_html-entities.mjs';
 
 const ORIGIN = 'https://www.occ.com.mx';
 const DEFAULT_QUERIES = ['automatizacion', 'robotica', 'mecatronica', 'sistemas-embebidos', 'control'];
 const DEFAULT_MAX_PAGES = 3;
 const HARD_PAGE_CAP = 10;
+const INTER_PAGE_DELAY_MS = 750;
 
 /** Strip tags, decode entities, collapse whitespace. */
 function text(html) {
@@ -60,6 +65,12 @@ function slugify(s) {
     .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 }
 
+/** @param {any} ctx @param {number} ms */
+function sleep(ctx, ms) {
+  if (typeof ctx?.sleep === 'function') return ctx.sleep(ms);
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
  * Build one search URL. Page 1 has no suffix; later pages take `-pagina-N`
  * on the KEYWORD segment (see the URL-shape note above).
@@ -69,6 +80,16 @@ export function buildSearchUrl(query, state, page) {
   const kw = page > 1 ? `de-${q}-pagina-${page}` : `de-${q}`;
   const st = state ? `${slugify(state)}/` : '';
   return `${ORIGIN}/empleos/${kw}/${st ? 'en-' + st : ''}`;
+}
+
+/**
+ * Best-effort marker for OCC's real empty-search page. Anything else on the
+ * first page is treated as a selector/source break rather than a healthy empty
+ * board, especially CDN/WAF interstitials with no cards.
+ */
+export function isEmptySearchPage(html) {
+  const body = text(html).toLowerCase();
+  return /no encontramos|sin resultados|no hay empleos|no se encontraron/.test(body);
 }
 
 /**
@@ -122,27 +143,49 @@ export default {
       ? entry.queries : DEFAULT_QUERIES;
     const states = Array.isArray(entry.states) && entry.states.length
       ? entry.states : [null];
-    const maxPages = Math.min(
+    const entryMaxPages = Math.min(
       Number.isInteger(entry.max_pages) && entry.max_pages > 0 ? entry.max_pages : DEFAULT_MAX_PAGES,
       HARD_PAGE_CAP,
     );
+    const ctxMaxPages = ctx?.maxPages;
+    const probeMaxPages = typeof ctxMaxPages === 'number' && Number.isInteger(ctxMaxPages) && ctxMaxPages > 0
+      ? ctxMaxPages : Infinity;
+    const maxPages = Math.min(entryMaxPages, probeMaxPages);
+    const probing = Number.isFinite(probeMaxPages);
 
     const seen = new Set();
     const jobs = [];
+    let successfulPages = 0;
+    let lastError = null;
 
     for (const query of queries) {
       for (const state of states) {
         for (let page = 1; page <= maxPages; page++) {
+          if (page > 1) await sleep(ctx, INTER_PAGE_DELAY_MS);
+
           const url = buildSearchUrl(query, state, page);
           let html;
           try {
-            html = await ctx.fetchText(url, { redirect: 'error' });
+            html = await fetchTextWithRetry(ctx, url, {
+              headers: { 'User-Agent': BROWSER_LIKE_USER_AGENT },
+              redirect: 'error',
+            });
           } catch (err) {
-            // One bad keyword/state/page must not kill the whole board.
+            lastError = err;
+            // verify-portals uses sentinel errors such as ProbePageBudgetReached;
+            // preserve identity instead of flattening probe failures into [].
+            if (probing) throw err;
             break;
           }
+          successfulPages++;
+
           const cards = parseCards(html);
-          if (!cards.length) break;
+          if (!cards.length) {
+            if (page === 1 && !isEmptySearchPage(html)) {
+              throw new Error('OCC returned a first page with no parseable job cards and no empty-results marker');
+            }
+            break;
+          }
 
           // OCC answers an out-of-range page with page 1 rather than an empty
           // result, so "no new ids on this page" is the real end-of-results
@@ -155,7 +198,9 @@ export default {
             jobs.push({
               title: c.title,
               url: c.url,
-              company: c.company || (entry.name || 'OCC'),
+              // Never attribute an aggregator listing to OCC itself. Unknown or
+              // missing employer stays the locale-invariant marker.
+              company: c.company || '?',
               location: c.location,
             });
           }
@@ -164,6 +209,7 @@ export default {
       }
     }
 
+    if (successfulPages === 0 && lastError) throw lastError;
     return jobs;
   },
 };
