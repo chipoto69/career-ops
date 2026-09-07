@@ -12,7 +12,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -255,3 +255,87 @@ test('linkedin-join.mjs --help --bogus still errors', () => {
   assert.equal(r.status, 1, `--help --bogus exited ${r.status}, want 1`);
   assert.match(r.all, /unrecognized flag/i);
 });
+
+// analyze-patterns.mjs flag validation (#3113)
+test('analyze-patterns.mjs rejects typos of --min-threshold and --min-vendor-n', () => {
+  for (const typo of ['--min-treshhold', '--min-vendor-num']) {
+    const r = runScript('analyze-patterns.mjs', typo);
+    assert.equal(r.status, 1, `${typo} exited ${r.status}, want 1`);
+    assert.match(r.all, /unrecognized flag/i);
+    assert.ok(r.all.includes(typo), `did not echo ${typo}`);
+  }
+});
+
+test('analyze-patterns.mjs rejects missing operands for --min-threshold and --min-vendor-n', () => {
+  const missingCases = [
+    ['--min-threshold'],
+    ['--min-vendor-n'],
+    ['--min-threshold', '--summary'],
+    ['--min-vendor-n', '--summary'],
+  ];
+  for (const args of missingCases) {
+    const r = runScript('analyze-patterns.mjs', ...args);
+    assert.equal(r.status, 1, `${args.join(' ')} exited ${r.status}, want 1`);
+    assert.match(r.all, new RegExp(`${args[0]} requires a value`, 'i'));
+  }
+});
+
+test('analyze-patterns.mjs rejects invalid values for --min-threshold', () => {
+  const invalidValues = ['abc', '-1', '3.5', '7abc'];
+  for (const val of invalidValues) {
+    const r = runScript('analyze-patterns.mjs', '--min-threshold', val);
+    assert.equal(r.status, 1, `--min-threshold ${val} exited ${r.status}, want 1`);
+    assert.match(r.all, /--min-threshold requires a non-negative integer/i);
+    assert.ok(r.all.includes(val), `error did not contain bad value ${val}`);
+  }
+});
+
+test('analyze-patterns.mjs rejects invalid values for --min-vendor-n', () => {
+  const invalidValues = ['abc', '0', '-1', '3.5', '7abc'];
+  for (const val of invalidValues) {
+    const r = runScript('analyze-patterns.mjs', '--min-vendor-n', val);
+    assert.equal(r.status, 1, `--min-vendor-n ${val} exited ${r.status}, want 1`);
+    assert.match(r.all, /--min-vendor-n requires a positive integer/i);
+    assert.ok(r.all.includes(val), `error did not contain bad value ${val}`);
+  }
+});
+
+test('analyze-patterns.mjs accepts valid values for --min-threshold and --min-vendor-n', () => {
+  const validCases = [
+    ['--min-threshold', '0'],
+    ['--min-threshold', '5'],
+    ['--min-vendor-n', '1'],
+    ['--min-vendor-n', '8'],
+    ['--min-threshold=5'],
+    ['--min-vendor-n=8'],
+  ];
+  for (const args of validCases) {
+    const dataRoot = mkdtempSync(join(tmpdir(), 'career-ops-analyze-flags-'));
+    try {
+      mkdirSync(join(dataRoot, 'data'));
+      writeFileSync(join(dataRoot, 'data', 'applications.md'), [
+        '# Applications Tracker',
+        '',
+        '| # | Date | Company | Role | Score | Status | PDF | Report | Notes |',
+        '|---|------|---------|------|-------|--------|-----|--------|-------|',
+        '| 1 | 2026-01-01 | Co 1 | Engineer | 4.0 | Applied | - | - | - |',
+        '| 2 | 2026-01-02 | Co 2 | Engineer | 4.0 | Applied | - | - | - |',
+        '| 3 | 2026-01-03 | Co 3 | Engineer | 4.0 | Applied | - | - | - |',
+        '| 4 | 2026-01-04 | Co 4 | Engineer | 4.0 | Applied | - | - | - |',
+        '| 5 | 2026-01-05 | Co 5 | Engineer | 4.0 | Applied | - | - | - |',
+        '',
+      ].join('\n'), 'utf-8');
+
+      const r = spawnSync(process.execPath, [join(ROOT, 'analyze-patterns.mjs'), ...args], {
+        cwd: ROOT,
+        encoding: 'utf-8',
+        timeout: 30_000,
+        env: { ...process.env, CAREER_OPS_ROOT: dataRoot },
+      });
+      assert.equal(r.status, 0, `${args.join(' ')} exited ${r.status}, want 0: ${r.stdout}${r.stderr}`);
+    } finally {
+      rmSync(dataRoot, { recursive: true, force: true });
+    }
+  }
+});
+

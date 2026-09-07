@@ -1678,6 +1678,22 @@ if (isMainModule(import.meta.url)) {
     requireOperand: true,
   });
 
+  const rawThreshold = flagValue(args, '--min-threshold');
+  if (rawThreshold !== undefined) {
+    if (!/^\d+$/.test(rawThreshold) || !Number.isSafeInteger(Number(rawThreshold)) || Number(rawThreshold) < 0) {
+      console.error(`Error: --min-threshold requires a non-negative integer, got "${rawThreshold}"`);
+      process.exit(1);
+    }
+  }
+
+  const rawVendorN = flagValue(args, '--min-vendor-n');
+  if (rawVendorN !== undefined) {
+    if (!/^\d+$/.test(rawVendorN) || !Number.isSafeInteger(Number(rawVendorN)) || Number(rawVendorN) < 1) {
+      console.error(`Error: --min-vendor-n requires a positive integer, got "${rawVendorN}"`);
+      process.exit(1);
+    }
+  }
+
   if (args.includes('--self-test')) {
     runSelfTest();
   }
