@@ -1875,7 +1875,7 @@ export function normalizeRoleForDedup(role) {
  * the state code is upper-case `OR`, the conjunction is lower-case `or` (or
  * `Or` when the value is title-cased). So an upper-case `OR` counts as a
  * separator only where a state code cannot be — anywhere but directly after the
- * comma that would introduce one. Known limitation, and the genuinely ambiguous
+ * comma or repeated whitespace that would introduce one. Known limitation, and the genuinely ambiguous
  * shape: an upper-case conjunction in that one position ("London, UK, OR
  * Dublin") reads exactly like a state code and is kept as one place.
  *
@@ -1885,7 +1885,7 @@ export function normalizeRoleForDedup(role) {
  *
  * Used only by {@link normalizeLocationForDedup}; nothing else parses the field.
  */
-const LOCATION_LIST_SEPARATOR_RE = /\s*[;|\u00b7/]\s*|\s+[Oo]r\s+|(?<!,)\s+OR\s+/u;
+const LOCATION_LIST_SEPARATOR_RE = /\s*[;|\u00b7/]\s*|\s+[Oo]r\s+|(?<![,\s])\s+OR\s+/u;
 
 /**
  * Normalize a posting location into a dedupe-key component.

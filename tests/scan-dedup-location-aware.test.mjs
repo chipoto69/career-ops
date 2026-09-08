@@ -232,6 +232,7 @@ const BARE = companyRoleDedupKey(CO, ROLE);
   const WANT = 'portland or+seattle wa';
   const SPLIT = [
     ['Portland, OR or Seattle, WA', 'lower-case conjunction after a state code'],
+    ['Portland,  OR or Seattle, WA', 'lower-case conjunction after a double-spaced state code'],
     ['Portland, OR OR Seattle, WA', 'upper-case conjunction after a state code'],
     ['Portland, OR Or Seattle, WA', 'title-cased conjunction'],
     ['Portland, OR\nor Seattle, WA', 'conjunction across a newline'],
