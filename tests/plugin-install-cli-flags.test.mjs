@@ -59,7 +59,7 @@ test('plugin-install.mjs --help --bogus still errors', () => {
 // An operand aimed at a command this file does not have (plugins.mjs owns
 // `add`/`new`) must not read as a silent success either.
 test('plugin-install.mjs rejects a stray operand and names plugins.mjs', () => {
-  const r = run('santifer/career-ops-plugin-example');
+  const r = run('example/career-ops-plugin-example');
   assert.equal(r.status, 1, `a stray operand exited ${r.status}, want 1`);
   assert.match(r.stderr, /takes no arguments/i);
   assert.match(r.stderr, /plugins\.mjs/, 'the error did not say where the commands live');
