@@ -7,7 +7,7 @@
 </div>
 
 <p align="center">
-  <a href="https://x.com/santifer"><img src="docs/hero-banner.jpg" alt="Career-Ops Multi-Agent Job Search System" width="800"></a>
+  <a href="https://x.com/santifer"><img src="docs/hero-banner.jpg" alt="career-ops Multi-Agent Job Search System" width="800"></a>
 </p>
 
 <p align="center">
@@ -16,12 +16,26 @@
   <em>अब यह open source है।</em>
 </p>
 
+<hr>
+
+<p align="center">
+  <a href="HIRED.md"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fsantifer%2Fcareer-ops%2Fmain%2Fdocs%2Fhired-count.json&query=%24.count&label=%F0%9F%8E%89%20HIRED%20WITH%20CAREER-OPS&suffix=%20verified&color=2ea44f&style=for-the-badge&labelColor=2b3137" alt="Hired with career-ops: verified count"></a>
+</p>
+
+<p align="center"><sub>आपको भी मिल गई? <a href="https://github.com/career-ops-hq/career-ops/issues/new?template=i-got-hired.yml">अपनी कहानी share करें →</a> · आपका card किसी ऐसे व्यक्ति को दिखाएगा जो अभी तलाश में है — कि आगे बढ़ने का रास्ता मौजूद है।</sub></p>
+
+<p align="center">
+  <a href="HIRED.md"><img src="docs/hired-wall.svg" alt="सबसे हाल की तीन नौकरी मिलने की कहानियाँ" width="800"></a>
+</p>
+
+<p align="center"><sub>हर गिनती एक सार्वजनिक कहानी है जिसे आप <a href="HIRED.md">खुद परख सकते हैं →</a> · उनमें से हर एक की शुरुआत वहीं से हुई, जहाँ आप आज हैं।</sub></p>
+
 <p align="center">
   <a href="https://trendshift.io/repositories/25195" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/25195" alt="santifer%2Fcareer-ops | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 </p>
 
 <p align="center">
-  <a href="https://www.producthunt.com/products/santifer-io?utm_source=badge-featured&utm_medium=badge" target="_blank" rel="noopener noreferrer"><img src="docs/press/producthunt.svg" alt="Career-Ops on Claude | Product Hunt" style="width: 206px; height: 54px; vertical-align: middle;" width="206" height="54"/></a>
+  <a href="https://www.producthunt.com/products/santifer-io?utm_source=badge-featured&utm_medium=badge" target="_blank" rel="noopener noreferrer"><img src="docs/press/producthunt.svg" alt="career-ops on Claude | Product Hunt" style="width: 206px; height: 54px; vertical-align: middle;" width="206" height="54"/></a>
 </p>
 
 <p align="center"><sub>FEATURED IN</sub></p>
@@ -35,16 +49,18 @@
 ---
 
 <p align="center">
-  <img src="docs/demo.gif" alt="Career-Ops Demo" width="800">
+  <img src="docs/demo.gif" alt="career-ops Demo" width="800">
 </p>
 
 <p align="center"><strong>740+ job listings evaluated · 100+ personalized CVs · 1 dream role landed</strong></p>
+
+<p align="center"><sub><a href="https://santifer.io">Santiago Fernández de Valderrama Aparicio</a> (<a href="https://github.com/santifer">@santifer</a>) द्वारा निर्मित और अनुरक्षित</sub></p>
 
 <p align="center">
   <a href="https://warpchart.dev/hq">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://warpchart.dev/api/chart?theme=dark&v=3">
-      <img alt="Live star telemetry of santifer/career-ops" src="https://warpchart.dev/api/chart?theme=light&v=3" loading="lazy">
+      <img alt="Live star telemetry of career-ops-hq/career-ops" src="https://warpchart.dev/api/chart?theme=light&v=3" loading="lazy">
     </picture>
   </a>
 </p>
@@ -54,7 +70,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/santifer/career-ops/releases/latest"><img src="https://img.shields.io/npm/v/%40santifer%2Fcareer-ops?style=for-the-badge&labelColor=2b3137&color=2ea44f&label=release" alt="Latest release"></a>
+  <a href="https://github.com/career-ops-hq/career-ops/releases/latest"><img src="https://img.shields.io/npm/v/%40santifer%2Fcareer-ops?style=for-the-badge&labelColor=2b3137&color=2ea44f&label=release" alt="Latest release"></a>
 </p>
 
 <p align="center">
@@ -82,17 +98,17 @@
 
 ## यह क्या है
 
-Career-Ops ([career-ops.org](https://career-ops.org), जिसे **careerops** भी कहते हैं) किसी भी AI coding CLI को एक पूर्ण job search command center में बदल देता है। Applications को spreadsheet में manually track करने की जगह, आपको एक AI-powered pipeline मिलती है जो:
+career-ops ([career-ops.org](https://career-ops.org), जिसे **careerops** भी कहते हैं) किसी भी AI coding CLI को एक पूर्ण job search command center में बदल देता है। Applications को spreadsheet में manually track करने की जगह, आपको एक AI-powered pipeline मिलती है जो:
 
-- **Offers evaluate करती है** एक structured A-F scoring system के साथ (10 weighted dimensions)
+- **Offers evaluate करती है** एक structured A-H evaluation के साथ (पाँच dimensions जो 1-5 का score देते हैं)
 - **Tailored PDFs generate करती है** -- job description के अनुसार customize किए गए ATS-optimized CVs
 - **Portals scan करती है** automatically (Greenhouse, Ashby, Lever, company pages)
 - **Batch में process करती है** -- sub-agents के साथ parallel में 10+ offers evaluate करती है
 - **सब कुछ track करती है** integrity checks के साथ single source of truth में
 
-> **Important: यह spray-and-pray tool नहीं है।** Career-ops एक filter है -- यह सैकड़ों offers में से उन कुछ offers को ढूंढने में मदद करता है जो आपके समय के लायक हैं। System strongly recommend करता है कि 4.0/5 से कम score वाले offers पर apply न करें। आपका समय मूल्यवान है, और recruiter का भी। Submit करने से पहले हमेशा review करें।
+> **Important: यह spray-and-pray tool नहीं है।** career-ops एक filter है -- यह सैकड़ों offers में से उन कुछ offers को ढूंढने में मदद करता है जो आपके समय के लायक हैं। System strongly recommend करता है कि 4.0/5 से कम score वाले offers पर apply न करें। आपका समय मूल्यवान है, और recruiter का भी। Submit करने से पहले हमेशा review करें।
 
-Career-ops agentic है: जो भी AI coding CLI आप चुनें वह Playwright से career pages navigate करता है, आपके CV बनाम job description के बारे में reasoning करके fit evaluate करता है (keyword matching नहीं), और हर listing के लिए आपका resume adapt करता है।
+career-ops agentic है: जो भी AI coding CLI आप चुनें वह Playwright से career pages navigate करता है, आपके CV बनाम job description के बारे में reasoning करके fit evaluate करता है (keyword matching नहीं), और हर listing के लिए आपका resume adapt करता है।
 
 > **ध्यान दें: पहले कुछ evaluations बहुत अच्छे नहीं होंगे।** System अभी आपको नहीं जानता। इसे context दें -- आपका CV, आपकी career story, आपके proof points, आपकी preferences, आप किसमें अच्छे हैं, क्या avoid करना चाहते हैं। जितना ज़्यादा nurture करेंगे, उतना बेहतर होगा। इसे एक नए recruiter को onboard करने की तरह समझें: पहले हफ्ते उन्हें आपके बारे में सीखना है, फिर वे invaluable बन जाते हैं।
 
@@ -111,7 +127,7 @@ Career-ops agentic है: जो भी AI coding CLI आप चुनें �
 | **Portal Scanner**       | 45+ companies pre-configured (Anthropic, OpenAI, ElevenLabs, Retool, n8n...) + custom queries across Ashby, Greenhouse, Lever, Wellfound |
 | **Batch Processing**     | Headless CLI workers के साथ parallel evaluation (`claude -p` / `opencode run`)                                                          |
 | **Dashboard TUI**        | Pipeline browse, filter, और sort करने के लिए Terminal UI                                                                               |
-| **Human-in-the-Loop**    | AI evaluate और recommend करता है, आप decide और act करते हैं। System कभी application submit नहीं करता -- final call हमेशा आपका        |
+| **Human-in-the-Loop**    | AI evaluate और recommend करता है, आप decide और act करते हैं। System कभी application submit नहीं करता -- final call हमेशा आपका <!-- hitl: absolute guarantee. Do not add "automatically", "by itself", "without your permission" or any other hedge when translating this row. -->        |
 | **Pipeline Integrity**   | Automated merge, dedup, status normalization, health checks                                                                              |
 
 ## Quick Start
@@ -139,7 +155,7 @@ claude   # या gemini / codex / qwen / opencode / agy / grok — यहाँ
 <summary><b>Manually setup करना पसंद करते हैं? (git clone)</b></summary>
 
 ```bash
-git clone https://github.com/santifer/career-ops.git
+git clone https://github.com/career-ops-hq/career-ops.git
 cd career-ops && npm install
 npx playwright install chromium   # केवल PDF generation के लिए ज़रूरी
 
@@ -180,7 +196,7 @@ Full setup guide के लिए [docs/SETUP.md](docs/SETUP.md) देखें
 
 ## Antigravity CLI Integration
 
-Career-ops Antigravity CLI को natively support करता है, वैसे ही जैसे Claude Code और OpenCode को। सभी slash commands shared skill entrypoint के through available हैं, same `modes/*.md` evaluation logic use करके।
+career-ops Antigravity CLI को natively support करता है, वैसे ही जैसे Claude Code और OpenCode को। सभी slash commands shared skill entrypoint के through available हैं, same `modes/*.md` evaluation logic use करके।
 
 Google ने consumer Gemini CLI access को Antigravity CLI में transition किया है। `GEMINI.md` अब एक no-op compatibility guard है ताकि Antigravity `AGENTS.md` और `GEMINI.md` दोनों पढ़ने पर full project instructions duplicate न करे।
 
@@ -203,7 +219,7 @@ Skill open standard में `.agents/skills/career-ops/SKILL.md` में def
 
 ## Codex Integration
 
-Career-ops Codex को same shared router के through support करता है, लेकिन invocation model CLIs से अलग है जो slash commands auto-register करते हैं। Full guide के लिए [docs/CODEX.md](docs/CODEX.md) देखें।
+career-ops Codex को same shared router के through support करता है, लेकिन invocation model CLIs से अलग है जो slash commands auto-register करते हैं। Full guide के लिए [docs/CODEX.md](docs/CODEX.md) देखें।
 
 ### Interactive Codex
 
@@ -234,7 +250,7 @@ codex exec "Run career-ops tracker mode and summarize the current statuses."
 
 ## Grok Build CLI Integration
 
-Career-ops Grok Build CLI को natively support करता है, वैसे ही जैसे Claude Code और OpenCode को। `AGENTS.md` project rules के रूप में auto-load होता है, और सभी slash commands shared skill entrypoint के through available हैं।
+career-ops Grok Build CLI को natively support करता है, वैसे ही जैसे Claude Code और OpenCode को। `AGENTS.md` project rules के रूप में auto-load होता है, और सभी slash commands shared skill entrypoint के through available हैं।
 
 ### Native Grok Build CLI
 
@@ -273,7 +289,7 @@ npm run gemini:eval -- "JD text here"
 
 ## Usage
 
-Career-ops एक shared command router use करता है। CLIs में जो slash commands register करते हैं, यह इस तरह दिखता है:
+career-ops एक shared command router use करता है। CLIs में जो slash commands register करते हैं, यह इस तरह दिखता है:
 
 ```
 /career-ops                → सभी available commands दिखाएं
@@ -307,7 +323,7 @@ Codex में, slash commands guaranteed नहीं हैं। Same mode n
 └────────┬─────────┘
          │
 ┌────────▼─────────┐
-│  A-F Evaluation  │  Match, gaps, comp research, STAR stories
+│  A-H Evaluation  │  Match, gaps, comp research, STAR stories
 │  (cv.md पढ़ता है) │
 └────────┬─────────┘
          │
@@ -407,6 +423,14 @@ career-ops/
 
 - **[cv-santiago](https://github.com/santifer/cv-santiago)** -- Portfolio website (santifer.io) जिसमें AI chatbot, LLMOps dashboard, और case studies हैं। यदि आपको job search के साथ showcase करने के लिए portfolio चाहिए, इसे fork करें और अपना बनाएं।
 
+## अक्सर पूछे जाने वाले प्रश्न (FAQ)
+
+**career-ops क्या है?**  
+career-ops एक ओपन-सोर्स, CLI-agnostic जॉब सर्च कमांड सेंटर है। यह किसी भी AI कोडिंग CLI को ऐसे पाइपलाइन में बदल देता है जो आपके CV के अनुसार नौकरी के ऑफ़र्स का मूल्यांकन करता है, ATS-अनुकूल PDF तैयार करता है, सही व्यक्ति का संपर्क ढूँढता है, और पूरी प्रक्रिया को एक ही जगह ट्रैक करता है — जबकि अंतिम निर्णय हमेशा आपका होता है। यह CareerOps Manifesto का पहला reference implementation है। अधिक जानकारी के लिए देखें: [career-ops.org](https://career-ops.org).
+
+**क्या मैं career-ops को मुफ्त में या किसी सस्ते / लोकल मॉडल के साथ चला सकता हूँ?**  
+हाँ। career-ops CLI-agnostic है और OpenRouter के मुफ्त मॉडल, Ollama, या किसी भी OpenAI-compatible endpoint के माध्यम से मुफ्त तथा लोकल मॉडलों पर चल सकता है। इसलिए आप किसी पेड सब्सक्रिप्शन पर निर्भर नहीं हैं। पूरी सेटअप प्रक्रिया के लिए [docs/RUNNING_ON_A_BUDGET.md](docs/RUNNING_ON_A_BUDGET.md) देखें।
+
 ## Author के बारे में
 
 मैं [Santiago Fernández de Valderrama Aparicio](https://santifer.io/about) (santifer) हूँ -- Head of Applied AI, former founder (एक ऐसा business build किया और बेचा जो अभी भी मेरे नाम से चलता है)। मैंने career-ops अपनी खुद की job search manage करने के लिए बनाया। यह काम आया: मैंने इसे अपना current role land करने के लिए use किया।
@@ -430,11 +454,11 @@ Full details के लिए [LEGAL_DISCLAIMER.md](LEGAL_DISCLAIMER.md) दे�
 
 ## Contributors
 
-<a href="https://github.com/santifer/career-ops/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=santifer/career-ops" />
+<a href="https://github.com/career-ops-hq/career-ops/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=career-ops-hq/career-ops" />
 </a>
 
-career-ops use करके hired हुए? [अपनी story share करें!](https://github.com/santifer/career-ops/issues/new?template=i-got-hired.yml)
+career-ops use करके hired हुए? [अपनी story share करें!](https://github.com/career-ops-hq/career-ops/issues/new?template=i-got-hired.yml)
 
 ## License & Trademark
 

@@ -7,7 +7,7 @@
 </div>
 
 <p align="center">
-  <a href="https://x.com/santifer"><img src="docs/hero-banner.jpg" alt="Career-Ops Multi-Agent-System für die Jobsuche" width="800"></a>
+  <a href="https://x.com/santifer"><img src="docs/hero-banner.jpg" alt="career-ops Multi-Agent-System für die Jobsuche" width="800"></a>
 </p>
 
 <p align="center">
@@ -21,7 +21,7 @@
 </p>
 
 <p align="center">
-  <a href="https://www.producthunt.com/products/santifer-io?utm_source=badge-featured&utm_medium=badge" target="_blank" rel="noopener noreferrer"><img src="docs/press/producthunt.svg" alt="Career-Ops auf Claude | Product Hunt" style="width: 206px; height: 54px; vertical-align: middle;" width="206" height="54"/></a>
+  <a href="https://www.producthunt.com/products/santifer-io?utm_source=badge-featured&utm_medium=badge" target="_blank" rel="noopener noreferrer"><img src="docs/press/producthunt.svg" alt="career-ops auf Claude | Product Hunt" style="width: 206px; height: 54px; vertical-align: middle;" width="206" height="54"/></a>
 </p>
 
 <p align="center"><sub>BEKANNT AUS</sub></p>
@@ -35,16 +35,18 @@
 ---
 
 <p align="center">
-  <img src="docs/demo.gif" alt="Career-Ops Demo" width="800">
+  <img src="docs/demo.gif" alt="career-ops Demo" width="800">
 </p>
 
 <p align="center"><strong>740+ Stellenanzeigen bewertet · 100+ personalisierte Lebensläufe · 1 Traumrolle bekommen</strong></p>
+
+<p align="center"><sub>Erstellt und gepflegt von <a href="https://santifer.io">Santiago Fernández de Valderrama Aparicio</a> (<a href="https://github.com/santifer">@santifer</a>)</sub></p>
 
 <p align="center">
   <a href="https://warpchart.dev/hq">
     <picture>
       <source media="(prefers-color-scheme: dark)" srcset="https://warpchart.dev/api/chart?theme=dark&v=3">
-      <img alt="Live-Sterne-Telemetrie von santifer/career-ops" src="https://warpchart.dev/api/chart?theme=light&v=3" loading="lazy">
+      <img alt="Live-Sterne-Telemetrie von career-ops-hq/career-ops" src="https://warpchart.dev/api/chart?theme=light&v=3" loading="lazy">
     </picture>
   </a>
 </p>
@@ -54,7 +56,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/santifer/career-ops/releases/latest"><img src="https://img.shields.io/npm/v/%40santifer%2Fcareer-ops?style=for-the-badge&labelColor=2b3137&color=2ea44f&label=release" alt="Neueste Version"></a>
+  <a href="https://github.com/career-ops-hq/career-ops/releases/latest"><img src="https://img.shields.io/npm/v/%40santifer%2Fcareer-ops?style=for-the-badge&labelColor=2b3137&color=2ea44f&label=release" alt="Neueste Version"></a>
 </p>
 
 <p align="center">
@@ -82,17 +84,17 @@
 
 ## Was ist das?
 
-Career-Ops ([career-ops.org](https://career-ops.org), auch **careerops**) macht jede KI-Coding-CLI zu einer Kommandozentrale für die Jobsuche. Statt Bewerbungen manuell in einer Tabelle zu verfolgen, bekommst du eine KI-gestützte Pipeline, die:
+career-ops ([career-ops.org](https://career-ops.org), auch **careerops**) macht jede KI-Coding-CLI zu einer Kommandozentrale für die Jobsuche. Statt Bewerbungen manuell in einer Tabelle zu verfolgen, bekommst du eine KI-gestützte Pipeline, die:
 
-- **Stellenanzeigen bewertet** mit einem strukturierten A-F-Scoring-System (10 gewichtete Dimensionen)
+- **Stellenanzeigen mit einer strukturierten A-H-Bewertung bewertet** (fünf Dimensionen, die zu einer Bewertung von 1–5 führen)
 - **maßgeschneiderte PDFs generiert** -- ATS-optimierte Lebensläufe, angepasst an jede Stellenanzeige
 - **Portale automatisch scannt** (Greenhouse, Ashby, Lever, Unternehmensseiten)
 - **Batch-Verarbeitung** ermöglicht -- 10+ Stellenanzeigen parallel mit Sub-Agents bewerten
 - **alles verfolgt** in einer einzigen Source of Truth mit Integritätsprüfungen
 
-> **Wichtig: Das ist KEIN Spray-and-Pray-Tool.** Career-ops ist ein Filter: Es hilft dir, aus hunderten Stellenanzeigen die wenigen zu finden, die deine Zeit wert sind. Das System rät deutlich davon ab, sich auf Rollen mit weniger als 4,0/5 zu bewerben. Deine Zeit ist wertvoll, die der Recruiter auch. Prüfe alles, bevor du etwas abschickst.
+> **Wichtig: Das ist KEIN Spray-and-Pray-Tool.** career-ops ist ein Filter: Es hilft dir, aus hunderten Stellenanzeigen die wenigen zu finden, die deine Zeit wert sind. Das System rät deutlich davon ab, sich auf Rollen mit weniger als 4,0/5 zu bewerben. Deine Zeit ist wertvoll, die der Recruiter auch. Prüfe alles, bevor du etwas abschickst.
 
-Career-ops ist agentisch: Die KI-Coding-CLI deiner Wahl navigiert mit Playwright durch Karriereseiten, bewertet den Fit zwischen Lebenslauf und Stellenanzeige durch echtes Reasoning statt Keyword-Matching und passt deinen Lebenslauf pro Stellenanzeige an.
+career-ops ist agentisch: Die KI-Coding-CLI deiner Wahl navigiert mit Playwright durch Karriereseiten, bewertet den Fit zwischen Lebenslauf und Stellenanzeige durch echtes Reasoning statt Keyword-Matching und passt deinen Lebenslauf pro Stellenanzeige an.
 
 > **Hinweis: Die ersten Bewertungen werden nicht perfekt sein.** Das System kennt dich noch nicht. Gib ihm Kontext: deinen Lebenslauf, deinen Werdegang, Proof Points, Präferenzen, Stärken und No-Gos. Je besser du es einarbeitest, desto besser wird es. Denk daran wie an das Onboarding eines neuen Recruiters: In der ersten Woche muss er dich kennenlernen, danach wird er wertvoll.
 
@@ -111,7 +113,7 @@ Gebaut von jemandem, der damit 740+ Stellenanzeigen bewertet, 100+ personalisier
 | **Portal-Scanner** | 45+ vorkonfigurierte Unternehmen (Anthropic, OpenAI, ElevenLabs, Retool, n8n...) plus eigene Queries über Ashby, Greenhouse, Lever und Wellfound |
 | **Batch Processing** | Parallele Bewertung mit headless CLI-Workern (`claude -p` / `opencode run`) |
 | **Dashboard TUI** | Terminal-UI zum Durchsuchen, Filtern und Sortieren deiner Pipeline |
-| **Human-in-the-Loop** | KI bewertet und empfiehlt, du entscheidest. Das System sendet niemals automatisch Bewerbungen ab |
+| **Human-in-the-Loop** | KI bewertet und empfiehlt, du entscheidest. Das System reicht niemals eine Bewerbung ein — die finale Entscheidung liegt immer bei dir <!-- hitl: absolute guarantee. Do not add "automatically", "by itself", "without your permission" or any other hedge when translating this row. --> |
 | **Pipeline-Integrität** | Automatisches Mergen, Deduplizieren, Status-Normalisierung und Health Checks |
 
 ## Schnellstart
@@ -137,7 +139,7 @@ claude   # oder gemini / codex / qwen / opencode / agy / grok -- öffne deine KI
 <summary><b>Lieber manuell einrichten? (git clone)</b></summary>
 
 ```bash
-git clone https://github.com/santifer/career-ops.git
+git clone https://github.com/career-ops-hq/career-ops.git
 cd career-ops && npm install
 npx playwright install chromium   # nur für PDF-Generierung nötig
 
@@ -163,7 +165,7 @@ Siehe [docs/SETUP.md](docs/SETUP.md) für die vollständige Setup-Anleitung und 
 
 ## Nutzung
 
-Career-ops verwendet einen gemeinsamen Command-Router. In CLIs mit Slash-Command-Registrierung sieht das so aus:
+career-ops verwendet einen gemeinsamen Command-Router. In CLIs mit Slash-Command-Registrierung sieht das so aus:
 
 ```text
 /career-ops                → alle verfügbaren Befehle anzeigen
@@ -194,7 +196,7 @@ Du fügst eine Stellenanzeigen-URL oder Stellenbeschreibung ein
 Archetyp-Erkennung
         |
         v
-A-F-Bewertung (liest cv.md)
+A-H-Bewertung (liest cv.md)
         |
         +-- Report
         +-- PDF
@@ -277,6 +279,26 @@ career-ops/
 
 - **[cv-santiago](https://github.com/santifer/cv-santiago)** -- Die Portfolio-Website (santifer.io) mit KI-Chatbot, LLMOps-Dashboard und Case Studies. Wenn du ein Portfolio für deine Jobsuche brauchst, fork es und mach es zu deinem eigenen.
 
+## FAQ
+
+**Was ist career-ops?**
+career-ops ist ein quelloffenes, CLI-unabhängiges Kommandozentrum für die Jobsuche. Es macht aus jeder KI-Coding-CLI eine Pipeline, die Stellenangebote gegen deinen Lebenslauf bewertet, ATS-optimierte PDFs erzeugt, die richtige Kontaktperson findet und alles an einem Ort trackt — während du die finale Entscheidung behältst. Es ist die erste Referenzimplementierung des CareerOps Manifesto. Mehr unter [career-ops.org](https://career-ops.org).
+
+**Kann ich career-ops kostenlos oder mit einem günstigeren / lokalen Modell nutzen?**
+Ja. career-ops ist CLI-unabhängig und läuft mit kostenlosen und lokalen Modellen — über kostenlose OpenRouter-Modelle, Ollama oder jeden OpenAI-kompatiblen Endpoint — sodass du nicht an ein kostenpflichtiges Abo gebunden bist. Die vollständige Einrichtung findest du in [docs/RUNNING_ON_A_BUDGET.md](docs/RUNNING_ON_A_BUDGET.md).
+
+**Mit welchen KI-CLIs funktioniert career-ops?**
+career-ops läuft mit jeder gängigen KI-Coding-CLI — Claude Code, Codex, Gemini / Antigravity, OpenCode, Grok, Qwen und mehr — über den offenen Agent Skill Standard, ist also nie an einen einzelnen Anbieter gebunden. Nutze einfach die CLI, die du bereits hast.
+
+**Wie installiere ich career-ops unter Windows?**
+career-ops läuft unter Windows. Falls Skills während der Installation mit einem Symlink-Fehler nicht laden, steht die Lösung in [docs/FAQ.md](docs/FAQ.md). Die vollständigen Schritte findest du in [docs/SETUP.md](docs/SETUP.md).
+
+**Bewirbt sich career-ops automatisch für mich?**
+Nein. career-ops ist ein Filter, kein Spray-and-Pray-Auto-Bewerber. Die KI bewertet, priorisiert und entwirft; du prüfst und entscheidest. Sie reicht nie etwas ein, sendet oder klickt nichts — die finale Entscheidung liegt immer bei dir. Genau dieses Human-in-the-Loop-Design ist der ganze Sinn.
+
+**Ist career-ops kostenlos und Open Source?**
+Ja. career-ops ist kostenlos und Open Source, und für dich als Bewerber:in wird es das immer bleiben — es ist die erste Referenzimplementierung des [CareerOps Manifesto](https://career-ops.org/manifesto). Lies es, und wenn es ausdrückt, woran du glaubst, unterschreibe es.
+
 ## Über den Autor
 
 Ich bin [Santiago Fernández de Valderrama Aparicio](https://santifer.io/about) (santifer) -- Head of Applied AI, ehemaliger Gründer (ich habe ein Unternehmen aufgebaut und verkauft, das bis heute mit meinem Namen läuft). Ich habe career-ops gebaut, um meine eigene Jobsuche zu steuern. Es hat funktioniert: Damit habe ich meine aktuelle Rolle bekommen.
@@ -298,11 +320,11 @@ Siehe [LEGAL_DISCLAIMER.md](LEGAL_DISCLAIMER.md) für Details. Diese Software wi
 
 ## Mitwirkende
 
-<a href="https://github.com/santifer/career-ops/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=santifer/career-ops" />
+<a href="https://github.com/career-ops-hq/career-ops/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=career-ops-hq/career-ops" />
 </a>
 
-Mit career-ops eingestellt worden? [Teile deine Geschichte!](https://github.com/santifer/career-ops/issues/new?template=i-got-hired.yml)
+Mit career-ops eingestellt worden? [Teile deine Geschichte!](https://github.com/career-ops-hq/career-ops/issues/new?template=i-got-hired.yml)
 
 ## Lizenz & Trademark
 
