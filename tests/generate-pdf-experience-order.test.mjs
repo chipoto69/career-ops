@@ -11,7 +11,7 @@
 // the summary, the competencies block, and bullet selection within each role.
 
 import { validateCvExperienceOrder } from '../cv-experience-order.mjs';
-import { pass, fail, finish } from './helpers.mjs';
+import { pass, fail } from './helpers.mjs';
 
 console.log('\n📄 generate-pdf: experience ordering guard');
 
@@ -97,5 +97,3 @@ expectOk('ignores unparseable entries but still checks parseable neighbours', ()
 
 expectThrows('still catches an inversion around an unparseable entry', () =>
   validateCvExperienceOrder(html(['Jan 2015 – Dec 2016', 'ongoing', 'Jan 2022 – Present'])));
-
-finish();

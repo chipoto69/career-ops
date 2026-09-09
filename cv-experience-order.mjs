@@ -53,7 +53,13 @@ export function validateCvExperienceOrder(html, { allowNonChronological = false 
 
   const entries = [];
   for (const match of html.matchAll(JOB_PERIOD_RE)) {
-    const raw = match[1].replace(/<[^>]*>/g, '').trim();
+    let text = match[1];
+    let prev;
+    do {
+      prev = text;
+      text = text.replace(/<[^>]*>/g, '');
+    } while (text !== prev);
+    const raw = text.trim();
     const start = parseExperienceStart(raw);
     if (start !== null) entries.push({ raw, start });
   }
