@@ -2486,25 +2486,38 @@ const batchTrackerStep = batchPrompt.match(/### Step 5 \u2014 [^\n]*[\s\S]*?### 
 // (#3937). Absence of one spelling is not the property; the property is that the
 // step SAYS where the number comes from.
 //
-// So the load-bearing assertion is now positive: the step must state that the
-// coordinator reserved the number. A prompt that says that cannot also be
-// telling workers to derive their own and stay coherent, and a rewrite that
-// drops the sentence fails here loudly instead of passing silently.
+// So the load-bearing assertion is now positive and tied to the row contract:
+// the step must state that the coordinator-reserved REPORT_NUM is the value the
+// worker uses in the TSV row. A generic reservation sentence elsewhere ("the
+// coordinator reserved the meeting room") must not satisfy this gate while the
+// tracker number is still locally derived.
 //
 // A negative pattern was considered and rejected: the sentence that satisfies
 // this gate is itself a negated instruction ("...so do not calculate a local
 // `max+1`"), so any "reject wording about calculating" rule flags the correct
 // prompt. The original literal is kept as a cheap extra — it still catches the
 // exact historical regression — but it is no longer what the gate rests on.
-const batchNumIsReserved = /coordinator[^.\n]{0,60}\breserv/i.test(batchTrackerStep);
+const batchHasTrackerRowPlaceholder = /\{\{REPORT_NUM\}\}\\t\{\{DATE\}\}/.test(batchTrackerStep);
+const hasCoordinatorReservedReportNum = step => /coordinator-reserved\s+(?:REPORT_NUM|tracker number)|(?:REPORT_NUM|tracker number)[^.\n]{0,100}\bcoordinator[^.\n]{0,80}\breserv/i.test(step);
+const instructsWorkersToUseReservedNum = step => /use\s+the\s+coordinator-reserved\s+(?:REPORT_NUM|tracker number)|write\s+\{\{REPORT_NUM\}\}[^.\n]{0,120}\bcoordinator[^.\n]{0,80}\breserv/i.test(step);
+const batchNumIsReserved = hasCoordinatorReservedReportNum(batchTrackerStep)
+  && instructsWorkersToUseReservedNum(batchTrackerStep);
+const unrelatedReservationWouldPass = hasCoordinatorReservedReportNum(
+  '### Step 5 — Tracker TSV Row\nThe coordinator reserved the meeting room. Compute `{{next_num}}` yourself, then write {{REPORT_NUM}}\\t{{DATE}}.\n### Step 6 — Final JSON'
+) || instructsWorkersToUseReservedNum(
+  '### Step 5 — Tracker TSV Row\nThe coordinator reserved the meeting room. Compute `{{next_num}}` yourself, then write {{REPORT_NUM}}\\t{{DATE}}.\n### Step 6 — Final JSON'
+);
 if (
-  /\{\{REPORT_NUM\}\}\\t\{\{DATE\}\}/.test(batchTrackerStep) &&
+  batchHasTrackerRowPlaceholder &&
   batchNumIsReserved &&
+  !unrelatedReservationWouldPass &&
   !/Compute `\{next_num\}`/.test(batchTrackerStep)
 ) {
   pass('batch workers use the coordinator-reserved tracker number');
 } else if (!batchNumIsReserved) {
-  fail('batch Step 5 no longer states that the coordinator reserves the tracker number');
+  fail('batch Step 5 no longer ties the coordinator-reserved tracker number to the REPORT_NUM row');
+} else if (unrelatedReservationWouldPass) {
+  fail('batch Step 5 tracker-number gate accepts unrelated reservation prose');
 } else {
   fail('batch workers still compute tracker numbers independently');
 }
