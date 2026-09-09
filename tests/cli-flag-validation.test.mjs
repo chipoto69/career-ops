@@ -281,7 +281,7 @@ test('analyze-patterns.mjs rejects missing operands for --min-threshold and --mi
 });
 
 test('analyze-patterns.mjs rejects invalid values for --min-threshold', () => {
-  const invalidValues = ['abc', '-1', '3.5', '7abc'];
+  const invalidValues = ['abc', '-1', '3.5', '7abc', '9007199254740992'];
   for (const val of invalidValues) {
     const r = runScript('analyze-patterns.mjs', '--min-threshold', val);
     assert.equal(r.status, 1, `--min-threshold ${val} exited ${r.status}, want 1`);
@@ -291,7 +291,7 @@ test('analyze-patterns.mjs rejects invalid values for --min-threshold', () => {
 });
 
 test('analyze-patterns.mjs rejects invalid values for --min-vendor-n', () => {
-  const invalidValues = ['abc', '0', '-1', '3.5', '7abc'];
+  const invalidValues = ['abc', '0', '-1', '3.5', '7abc', '9007199254740992'];
   for (const val of invalidValues) {
     const r = runScript('analyze-patterns.mjs', '--min-vendor-n', val);
     assert.equal(r.status, 1, `--min-vendor-n ${val} exited ${r.status}, want 1`);
@@ -338,4 +338,3 @@ test('analyze-patterns.mjs accepts valid values for --min-threshold and --min-ve
     }
   }
 });
-
