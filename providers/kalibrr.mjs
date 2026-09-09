@@ -1,4 +1,6 @@
 // @ts-check
+import { decodeEntities } from './_html-entities.mjs';
+
 /** @typedef {import('./_types.js').Provider} Provider */
 
 // Kalibrr provider — hits the public, no-auth job-board search API used by
@@ -65,17 +67,12 @@ function assertKalibrrUrl(url) {
  */
 function stripHtml(html) {
   if (typeof html !== 'string' || !html) return '';
-  return html
+  const text = html
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/(p|div|li|h[1-6])>/gi, '\n')
     .replace(/<li[^>]*>/gi, '• ')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&rsquo;/g, "'")
+    .replace(/<[^>]+>/g, '');
+  return decodeEntities(text)
     .replace(/\n{3,}/g, '\n\n')
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
@@ -157,13 +154,14 @@ export default {
   },
 
   async fetch(entry, ctx) {
-    const apiUrl = entry.api || DEFAULT_API;
+    const options = /** @type {any} */ (entry);
+    const apiUrl = options.api || DEFAULT_API;
     assertKalibrrUrl(apiUrl);
 
-    const keywords = entry.searchKeywords || '';
-    const country = entry.country || DEFAULT_COUNTRY;
-    const pageSize = Number(entry.pageSize) || DEFAULT_PAGE_SIZE;
-    const maxPages = Number(entry.maxPages) || DEFAULT_MAX_PAGES;
+    const keywords = options.searchKeywords || '';
+    const country = options.country || DEFAULT_COUNTRY;
+    const pageSize = Number(options.pageSize) || DEFAULT_PAGE_SIZE;
+    const maxPages = Number(options.maxPages) || DEFAULT_MAX_PAGES;
 
     /** @type {import('./_types.js').Job[]} */
     const allJobs = [];
