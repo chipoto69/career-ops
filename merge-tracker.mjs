@@ -575,6 +575,25 @@ function appendTrailingTableCell(line, value = '', separator = false) {
 }
 
 /**
+ * Count cells in a closed Markdown table line using the same intentionally
+ * simple pipe shape this migration widens. Returns null instead of repairing
+ * malformed open-ended rows; callers keep the existing "missing closing pipe"
+ * failure path for those.
+ *
+ * @param {string} line - Header, separator, or data row.
+ * @returns {number|null} Number of cells between the outer pipe delimiters.
+ */
+function markdownTableCellCount(line) {
+  const eol = line.endsWith('\r') ? '\r' : '';
+  const body = eol ? line.slice(0, -1) : line;
+  if (!/^\s*\|/.test(body) || !/\|[ \t]*$/.test(body)) return null;
+  const parts = body.split('|');
+  if (parts[0].trim() === '') parts.shift();
+  if (parts.length && parts[parts.length - 1].trim() === '') parts.pop();
+  return parts.length;
+}
+
+/**
  * Explicitly add a trailing URL column to a recognized tracker table. Only
  * --backfill-urls calls this; ordinary merges retain the legacy no-URL layout.
  * The caller writes the widened table together with the backfilled values in
@@ -595,6 +614,15 @@ function addMissingUrlColumn(lines) {
     return { added: false, reason: 'no separator row directly after the tracker header' };
   }
 
+  const headerCellCount = markdownTableCellCount(lines[headerIdx]);
+  const separatorCellCount = markdownTableCellCount(lines[separatorIdx]);
+  if (headerCellCount == null || separatorCellCount == null) {
+    return { added: false, reason: 'the tracker table is missing a closing pipe' };
+  }
+  if (separatorCellCount !== headerCellCount) {
+    return { added: false, reason: `the separator row has ${separatorCellCount} cell(s), expected ${headerCellCount}` };
+  }
+
   const widenedHeader = appendTrailingTableCell(lines[headerIdx], 'URL');
   const widenedSeparator = appendTrailingTableCell(lines[separatorIdx], '', true);
   if (widenedHeader == null || widenedSeparator == null) {
@@ -603,6 +631,11 @@ function addMissingUrlColumn(lines) {
 
   const widenedRows = [];
   for (let i = separatorIdx + 1; i < lines.length && lines[i].startsWith('|'); i++) {
+    const rowCellCount = markdownTableCellCount(lines[i]);
+    if (rowCellCount == null) return { added: false, reason: `table row ${i + 1} is missing a closing pipe` };
+    if (rowCellCount !== headerCellCount) {
+      return { added: false, reason: `table row ${i + 1} has ${rowCellCount} cell(s), expected ${headerCellCount}` };
+    }
     const widened = appendTrailingTableCell(lines[i]);
     if (widened == null) return { added: false, reason: `table row ${i + 1} is missing a closing pipe` };
     widenedRows.push([i, widened]);

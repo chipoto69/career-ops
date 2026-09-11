@@ -80,6 +80,22 @@ test('an unfillable legacy row gains a full-width empty URL cell without shiftin
   assert.match(row, /\| — \| keep exactly \|  \|$/);
 });
 
+test('a malformed legacy row with a closing pipe is rejected without widening', t => {
+  const env = workspace(t, {
+    rows: ['| 6 | 2026-09-11 | Acme | Designer | 4.0/5 | Applied | ✅ | [6](reports/006-acme.md) |'],
+  });
+  const before = readFileSync(env.tracker, 'utf8');
+
+  assert.throws(
+    () => run(env),
+    error => {
+      assert.match(error.stderr.toString(), /table row 5 has 8 cell\(s\), expected 9/);
+      return true;
+    },
+  );
+  assert.equal(readFileSync(env.tracker, 'utf8'), before);
+});
+
 test('--backfill-urls is idempotent after adding and filling the column', t => {
   const env = workspace(t, {
     rows: ['| 3 | 2026-09-11 | Acme | Designer | 4.1/5 | Applied | ✅ | [3](reports/003-acme.md) | note |'],
