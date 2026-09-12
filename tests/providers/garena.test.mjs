@@ -75,12 +75,6 @@ try {
     if (rejected) pass(`parseGarenaResponse rejects office ${JSON.stringify(bad)}`);
     else fail(`parseGarenaResponse should reject office ${JSON.stringify(bad)}`);
 
-    let idRejected = false;
-    try { parseGarenaResponse({ jobs: [{ id: bad, title: 'Dot id', tags: {} }] }, {}); } catch { idRejected = true; }
-    if (idRejected) pass(`parseGarenaResponse rejects id ${JSON.stringify(bad)}`);
-    else fail(`parseGarenaResponse should reject id ${JSON.stringify(bad)}`);
-  }
-
     let threw = false, out;
     try { out = parseGarenaResponse({ jobs: [{ id: bad, title: 'Dot id', tags: {} }, { id: 'J9', title: 'Good', tags: {} }] }, {}); } catch { threw = true; }
     if (!threw && out.length === 1 && out[0].url.endsWith('/careers/J9')) pass(`parseGarenaResponse drops the id ${JSON.stringify(bad)} posting, keeps the rest`);
