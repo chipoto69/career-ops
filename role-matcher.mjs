@@ -296,8 +296,10 @@ export function roleFuzzyMatch(a, b) {
     const setA = new Set(wordsA);
     const uniqueA = wordsA.filter(w => !setB.has(w));
     const uniqueB = wordsB.filter(w => !setA.has(w));
+    const hasMeaningfulUniqueA = uniqueA.some(w => !BASELINE_TOKENS.has(w));
+    const hasMeaningfulUniqueB = uniqueB.some(w => !BASELINE_TOKENS.has(w));
     if (uniqueA.length > 0 && uniqueB.length > 0 &&
-        [...uniqueA, ...uniqueB].some(w => !BASELINE_TOKENS.has(w))) return false;
+        hasMeaningfulUniqueA && hasMeaningfulUniqueB) return false;
   }
 
   // Use a true set-based Jaccard ratio. Dividing by the smaller title inflates

@@ -106,6 +106,9 @@ try {
   distinct('a one-sided level with a unique word on each side splits',
     'Front Desk Assistant (Summer Housing)',
     'Administrative Assistant II (Housing Front Desk)');
+  same('a one-sided level with baseline-only uniqueness on one side still matches',
+    'Backend Analytics Engineer, Platform II',
+    'Analytics Engineer, Platform Payments');
   same('a one-sided level with identical tokens still matches',
     'Administrative Assistant', 'Administrative Assistant II');
 } catch (error) {
