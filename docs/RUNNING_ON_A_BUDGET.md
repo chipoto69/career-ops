@@ -155,13 +155,23 @@ To configure OpenCode with a custom provider:
 > `opencode run` usage where there is no `/models` picker to fall back on.
 > (`OPENAI_BASE_URL` *is* read by career-ops' own direct-API scripts —
 > `openai-eval.mjs`, `openai-tailor.mjs` — see `.env.example`. That is a
-> separate path from running a CLI as your engine.)
+> separate path from running a CLI as your engine.) Treat this English section as
+> canonical for translated quick-starts too: the Spanish/French/other guides
+> should link here or show the same `opencode.json` provider shape, not an
+> `OPENAI_API_BASE` export-only recipe.
 
 > **Headless runs need a model in config.** `opencode run` resolves its model
 > from the top-level `model` key (format `provider/model`, so an OpenRouter id
 > that itself contains a slash reads `openrouter/vendor/model:free`). Scripts
 > that shell out to `opencode run` — `rank-pipeline.mjs`, for one — do not pass
 > `--model`, so without that key there is nothing to select one.
+
+> **Hosted free models are not private.** When you choose an OpenRouter `:free`
+> model, OpenCode sends the prompt context to OpenRouter and the selected hosted
+> provider. Career-ops prompts can include roughly the first 2,000 characters of
+> `cv.md` plus job text and mode instructions. Review the provider retention
+> policy, redact sensitive fields first, or use a local/private endpoint for
+> confidential CVs.
 
 Free model ids on OpenRouter rotate, and the one above will eventually stop
 resolving. List what is currently free with:
