@@ -42,29 +42,31 @@ export function resolveNpmShim(binPath, deps = {}) {
   const passthrough = { file: binPath, prefixArgs: [] };
   if (platform !== "win32") return passthrough;
 
-  const ext = path.extname(binPath).toLowerCase();
+  const pathApi = platform === "win32" ? path.win32 : path;
+  const absBinPath = pathApi.resolve(binPath);
+  const ext = pathApi.extname(absBinPath).toLowerCase();
   // A real executable is already spawnable; only shim shapes need resolving.
   if (ext === ".exe" || ext === ".com") return passthrough;
   if (ext !== "" && ext !== ".cmd" && ext !== ".bat" && ext !== ".ps1") return passthrough;
 
-  const dir = path.dirname(binPath);
-  const base = path.basename(binPath, ext);
-  const cmdShim = path.join(dir, `${base}.cmd`);
-  const shShim = path.join(dir, base);
+  const dir = pathApi.dirname(absBinPath);
+  const base = pathApi.basename(absBinPath, ext);
+  const cmdShim = pathApi.join(dir, `${base}.cmd`);
+  const shShim = pathApi.join(dir, base);
 
-  const target = readTarget(cmdShim, exists, readFile) ?? readTarget(shShim, exists, readFile);
+  const target = readTarget(cmdShim, pathApi, exists, readFile) ?? readTarget(shShim, pathApi, exists, readFile);
   if (!target) return passthrough;
 
   // The shim references its target relative to its own directory (`%dp0%` /
   // `$basedir`). Resolve against that dir and refuse anything that escapes it:
   // a shim is data on disk, not a promise, and it must not be able to point
   // the spawn at an arbitrary file elsewhere.
-  const abs = path.resolve(dir, target);
-  const dirWithSep = dir.endsWith(path.sep) ? dir : dir + path.sep;
+  const abs = pathApi.resolve(dir, target);
+  const dirWithSep = dir.endsWith(pathApi.sep) ? dir : dir + pathApi.sep;
   if (!abs.startsWith(dirWithSep)) return passthrough;
   if (!exists(abs)) return passthrough;
 
-  const targetExt = path.extname(abs).toLowerCase();
+  const targetExt = pathApi.extname(abs).toLowerCase();
   if (targetExt === ".exe" || targetExt === ".com") return { file: abs, prefixArgs: [] };
   if (targetExt === ".js" || targetExt === ".mjs" || targetExt === ".cjs") {
     return { file: execPath, prefixArgs: [abs] };
@@ -76,7 +78,7 @@ export function resolveNpmShim(binPath, deps = {}) {
  * Pull the `node_modules/...` target out of one shim file, or null.
  * Matches both `%dp0%\node_modules\…` (.cmd) and `$basedir/node_modules/…` (sh).
  */
-function readTarget(shimPath, exists, readFile) {
+function readTarget(shimPath, pathApi, exists, readFile) {
   if (!exists(shimPath)) return null;
   let text;
   try {
@@ -89,5 +91,5 @@ function readTarget(shimPath, exists, readFile) {
   // never leak into the path.
   const m = /["']?(?:%dp0%|\$basedir)[\\/](node_modules[\\/][^"'\s]+)/.exec(text);
   if (!m) return null;
-  return m[1].replace(/[\\/]+/g, path.sep);
+  return m[1].replace(/[\\/]+/g, pathApi.sep);
 }
