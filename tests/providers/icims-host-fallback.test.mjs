@@ -75,6 +75,20 @@ const onlyPrimary = (ctx) => ctx.calls.length > 0 && ctx.calls.every((c) => c.st
   }
 }
 
+// If the primary 404s but the fallback has a different failure, surface the
+// fallback failure. The fallback has become the live board candidate, so a
+// throttle/timeout there is "unknown", not "dead board".
+{
+  const ctx = mkCtx({ [FALLBACK]: httpError(429) });
+  try {
+    await icims.fetch(entry, ctx);
+    fail('fetch swallowed a fallback 429');
+  } catch (err) {
+    if (err.status === 429 && ctx.calls.join(',') === `${PRIMARY}#0,${FALLBACK}#0`) pass('fallback non-404 failure is rethrown after exactly two host requests');
+    else fail(`fallback 429: status=${err.status} calls=${ctx.calls.join(',')}`);
+  }
+}
+
 // A throttle is not "no board here": rethrown without trying the fallback.
 {
   const ctx = mkCtx({ [PRIMARY]: httpError(429), [FALLBACK]: [page(card(FALLBACK, 3, 'Role C'))] });
