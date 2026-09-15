@@ -69,11 +69,11 @@ export default {
   },
 };
 
-// Pinpoint serves a shared demo/onboarding tenant for any <slug> that has
-// never launched real postings — the API still answers 200 with well-formed,
-// plausible-looking job data (#4190). Verified live against 6 unrelated
-// companies with no Pinpoint board (Telefonica, NTT Data, Michael Page,
-// Robert Walters, Adevinta, TravelPerk): each returns one of two canned
+// Pinpoint serves a shared demo/onboarding tenant for abandoned-trial boards —
+// some tenants still answer 200 with well-formed, plausible-looking job data
+// (#4190). Verified live against 6 unrelated observed boards with no real
+// Pinpoint postings (Telefonica, NTT Data, Michael Page, Robert Walters,
+// Adevinta, TravelPerk): each returns one of two canned
 // postings ("Head of DEI - UK" / "Head of DEI - Belfast"), and both embed the
 // exact same malformed YouTube attachment in their description — a doubled
 // "/embed/https://www.youtube.com/embed/<id>" URL for video id pFxm6fszrpw,

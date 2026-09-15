@@ -166,12 +166,12 @@ try {
   const demoOffers = parseRecruiteeResponse(
     {
       offers: [
-        { title: 'Senior Marketer (Sample)', careers_url: 'https://adecco.recruitee.com/o/sample' },
-        { title: 'senior marketer (sample)', careers_url: 'https://adecco.recruitee.com/o/lowercase' },
-        { title: 'Real Backend Engineer', careers_url: 'https://adecco.recruitee.com/o/real' },
+        { title: 'Senior Marketer (Sample)', careers_url: 'https://example-recruiting.recruitee.com/o/sample' },
+        { title: 'senior marketer (sample)', careers_url: 'https://example-recruiting.recruitee.com/o/lowercase' },
+        { title: 'Real Backend Engineer', careers_url: 'https://example-recruiting.recruitee.com/o/real' },
       ],
     },
-    'Adecco',
+    'Example Recruiting Co',
   );
   if (demoOffers.length === 1 && demoOffers[0].title === 'Real Backend Engineer') {
     pass('parseRecruiteeResponse drops any posting whose title carries the "(Sample)" marker, case-insensitively (#4190)');
@@ -196,8 +196,8 @@ try {
   // this is what makes discover-ats.mjs's existing "empty board" handling
   // apply automatically, with no changes needed there.
   const onlySample = parseRecruiteeResponse(
-    { offers: [{ title: 'Senior Marketer (Sample)', careers_url: 'https://deadtenant.recruitee.com/o/sample' }] },
-    'Dead Tenant',
+    { offers: [{ title: 'Senior Marketer (Sample)', careers_url: 'https://example-empty.recruitee.com/o/sample' }] },
+    'Example Empty Co',
   );
   if (onlySample.length === 0) {
     pass('a tenant serving only the seeded sample posting parses to zero jobs (resolves as empty upstream)');

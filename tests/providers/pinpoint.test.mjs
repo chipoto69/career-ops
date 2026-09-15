@@ -199,12 +199,12 @@ try {
   const demoTenant = {
     data: [{
       title: 'Head of DEI - UK',
-      url: 'https://telefonica.pinpointhq.com/postings/abc',
+      url: 'https://example-trial.pinpointhq.com/postings/abc',
       description: demoDescription,
       location: { name: 'Remote' },
     }],
   };
-  if (parsePinpointResponse(demoTenant, 'Telefonica').length === 0) {
+  if (parsePinpointResponse(demoTenant, 'Example Trial Co').length === 0) {
     pass('parsePinpointResponse drops a posting carrying the shared demo-video fingerprint (#4190)');
   } else {
     fail('parsePinpointResponse should drop the seeded demo posting');
