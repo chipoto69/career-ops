@@ -19,17 +19,17 @@ globalThis.fetch = async (_url, init) => {
 };
 
 try {
-  // 1. Default: zstd is never offered.
+  // 1. Default: the pinned value is exact, not merely non-zstd.
   await fetchJson('https://example.com/jobs.json');
   const enc = seen?.get('accept-encoding') ?? '';
-  if (enc && !/zstd/i.test(enc)) pass(`fetchJson pins accept-encoding without zstd ("${enc}")`);
-  else fail(`fetchJson accept-encoding should be pinned and exclude zstd, got "${enc}"`);
+  if (enc === 'gzip, deflate, br') pass(`fetchJson pins accept-encoding exactly ("${enc}")`);
+  else fail(`fetchJson accept-encoding should be exactly "gzip, deflate, br", got "${enc}"`);
 
-  // 2. Same default on the text path.
+  // 2. Same exact default on the text path.
   await fetchText('https://example.com/jobs.html');
   const textEnc = seen?.get('accept-encoding') ?? '';
-  if (textEnc === enc) pass('fetchText sends the same pinned accept-encoding');
-  else fail(`fetchText accept-encoding "${textEnc}" differs from fetchJson "${enc}"`);
+  if (textEnc === 'gzip, deflate, br') pass('fetchText sends the exact pinned accept-encoding');
+  else fail(`fetchText accept-encoding should be exactly "gzip, deflate, br", got "${textEnc}"`);
 
   // 3. A caller's explicit header still wins.
   await fetchJson('https://example.com/jobs.json', { headers: { 'accept-encoding': 'identity' } });
