@@ -114,11 +114,10 @@ await processOffer(mockBrowser, '- [ ] https://example.com/job | Acme Corp | Sen
     assert.match(body, new RegExp(`\\*\\*Date:\\*\\*\\s*${NY_DAY}`), `the report header carries the UTC day:\n${body.slice(0, 300)}`);
 
     const additions = readdirSync(additionsDir).filter((f) => f.endsWith('.tsv'));
-    if (additions.length) {
-      const tsv = readFileSync(join(additionsDir, additions[0]), 'utf-8');
-      assert.ok(tsv.includes(NY_DAY), `the tracker TSV row carries the UTC day:\n${tsv}`);
-      assert.ok(!tsv.includes(UTC_DAY), `the tracker TSV row carries the UTC day:\n${tsv}`);
-    }
+    assert.ok(additions.length > 0, `no tracker TSV addition was written:\n${r.stdout}${r.stderr}`.slice(0, 600));
+    const tsv = readFileSync(join(additionsDir, additions[0]), 'utf-8');
+    assert.ok(tsv.includes(NY_DAY), `the tracker TSV row carries the UTC day:\n${tsv}`);
+    assert.ok(!tsv.includes(UTC_DAY), `the tracker TSV row carries the UTC day:\n${tsv}`);
   } finally {
     rmSync(work, { recursive: true, force: true, maxRetries: 10 });
   }
