@@ -32,7 +32,7 @@ const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
  * The module resolves its anchors at import time, so the environment has to be
  * in place first; the query string keeps each call on its own module instance.
  */
-async function importUnderDataRoot(dataRoot) {
+async function importUnderDataRoot(dataRoot, portalsPath = undefined) {
   const previous = {
     root: process.env.CAREER_OPS_ROOT,
     dataDir: process.env.CAREER_OPS_DATA_DIR,
@@ -40,9 +40,10 @@ async function importUnderDataRoot(dataRoot) {
   };
   process.env.CAREER_OPS_ROOT = dataRoot;
   delete process.env.CAREER_OPS_DATA_DIR;
-  delete process.env.CAREER_OPS_PORTALS;
+  if (portalsPath === undefined) delete process.env.CAREER_OPS_PORTALS;
+  else process.env.CAREER_OPS_PORTALS = portalsPath;
   try {
-    const url = `${pathToFileURL(join(ROOT, 'audit-portals.mjs')).href}?data-root=${encodeURIComponent(dataRoot)}`;
+    const url = `${pathToFileURL(join(ROOT, 'audit-portals.mjs')).href}?data-root=${encodeURIComponent(dataRoot)}&portals=${encodeURIComponent(portalsPath ?? '')}`;
     return await import(url);
   } finally {
     for (const [name, value] of [
@@ -92,6 +93,34 @@ test('portals.yml still follows the data root', async () => {
       companies.map((c) => c.name),
       ['Data Root Co'],
       'the default portals path must read the user data root, not the checkout',
+    );
+  } finally {
+    rmSync(dataRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+  }
+});
+
+test('relative CAREER_OPS_PORTALS resolves against the data root, not cwd', async () => {
+  const dataRoot = fixture();
+  try {
+    writeFileSync(
+      join(dataRoot, 'data', 'relative-portals.yml'),
+      [
+        'job_boards: []',
+        'tracked_companies:',
+        '  - name: Relative Override Co',
+        '    careers_url: https://job-boards.greenhouse.io/relativeoverrideco',
+        '    enabled: true',
+        '',
+      ].join('\n'),
+      'utf-8',
+    );
+    const mod = await importUnderDataRoot(dataRoot, join('data', 'relative-portals.yml'));
+
+    const companies = mod.loadCompanies();
+    assert.deepEqual(
+      companies.map((c) => c.name),
+      ['Relative Override Co'],
+      'relative CAREER_OPS_PORTALS must be anchored to the data root',
     );
   } finally {
     rmSync(dataRoot, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });

@@ -54,7 +54,7 @@
  */
 
 import { existsSync, readFileSync } from 'fs';
-import { dirname, join } from 'path';
+import { dirname, isAbsolute, join } from 'path';
 import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 
@@ -80,7 +80,11 @@ import { isMainModule } from './lib/is-main-module.mjs';
 // reports `0 audited` and exits 0. scan.mjs already splits the two this way.
 const ROOT = getCareerOpsRoot();
 const CODE_ROOT = dirname(fileURLToPath(import.meta.url));
-const DEFAULT_PORTALS_PATH = process.env.CAREER_OPS_PORTALS || join(ROOT, 'portals.yml');
+const DEFAULT_PORTALS_PATH = process.env.CAREER_OPS_PORTALS
+  ? isAbsolute(process.env.CAREER_OPS_PORTALS)
+    ? process.env.CAREER_OPS_PORTALS
+    : join(ROOT, process.env.CAREER_OPS_PORTALS)
+  : join(ROOT, 'portals.yml');
 export const PROVIDERS_DIR = join(CODE_ROOT, 'providers');
 
 /** Boards at or under this many postings are worth a second look, not an error. */
