@@ -32,6 +32,13 @@ test("an empty/missing file reports every section as 'missing'", () => {
   for (const s of sectionState("", TEMPLATE)) assert.equal(s.state, "missing");
 });
 
+test("sectionState ignores complete and malformed HTML comments in section bodies", () => {
+  const template = "# Profile\n\n## Your Target Roles\n\nSame text\n";
+  const commented = "# Profile\n\n## Your Target Roles\n\n<!-- note --> Same text <!-- unterminated";
+  const [state] = sectionState(commented, template);
+  assert.equal(state.state, "template");
+});
+
 test("merge replaces ONLY the given section bodies and keeps every other byte", () => {
   const rendered = { exitNarrative: "I am moving from consulting to product because I want to own outcomes." };
   const merged = mergeSections(TEMPLATE, rendered);

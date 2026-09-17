@@ -173,9 +173,24 @@ export function mergeSections(existingMd, rendered) {
   return joinSections(pre, next);
 }
 
+/** Drop HTML comments without regex-based multi-character sanitization gaps. */
+function stripHtmlComments(value) {
+  let out = "";
+  let rest = String(value ?? "");
+  while (rest) {
+    const start = rest.indexOf("<!--");
+    if (start === -1) return out + rest;
+    out += rest.slice(0, start);
+    const end = rest.indexOf("-->", start + 4);
+    if (end === -1) return out;
+    rest = rest.slice(end + 3);
+  }
+  return out;
+}
+
 /** Normalize a body for template comparison: drop HTML comments + whitespace noise. */
 function normBody(body) {
-  return String(body ?? "").replace(/<!--[\s\S]*?-->/g, "").replace(/\s+/g, " ").trim();
+  return stripHtmlComments(body).replace(/\s+/g, " ").trim();
 }
 
 /**
