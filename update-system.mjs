@@ -243,6 +243,7 @@ const SYSTEM_PATHS = [
   'scan-hn.mjs',
   'scripts/check-syntax.mjs',
   'scripts/export-ats-text.mjs',
+  'scripts/followup-sweep.sh',
   'story-provenance-check.mjs',
   'lib/latex-content.mjs',
   'lib/context-budget.mjs',
@@ -2024,16 +2025,54 @@ export function reconcileGitignore(localText, upstreamText) {
   // pattern (only comments start with '#'), so membership answers both "does
   // this install already have this rule?" and "has this rationale block already
   // been copied by an earlier update?" with no second structure to keep in sync.
-  const seen = new Set(localText.split(/\r?\n/).map((l) => l.trim()).filter((l) => l !== ''));
+  const localLines = new Set(localText.split(/\r?\n/).map((l) => l.trim()).filter((l) => l !== ''));
+  const seen = new Set(localLines);
+
+  const upstreamLines = upstreamText.split(/\r?\n/);
+  const DIR_NEGATION_RE = /^!.+\/(\*\*)?$/;
+  const upstreamRuleEntries = upstreamLines
+    .map((raw) => ({ raw, line: raw.trim() }))
+    .filter(({ line }) => line !== '' && !line.startsWith('#'));
+  let protectedDirectoryNegation = null;
+  for (let i = 0; i < upstreamRuleEntries.length; i += 1) {
+    const { line } = upstreamRuleEntries[i];
+    if (!DIR_NEGATION_RE.test(line) || !localLines.has(line)) continue;
+    const hasMissingBefore = upstreamRuleEntries.slice(0, i).some((entry) => !localLines.has(entry.line));
+    const hasMissingAfter = upstreamRuleEntries.slice(i + 1).some((entry) => !localLines.has(entry.line));
+    if (hasMissingBefore && !hasMissingAfter) protectedDirectoryNegation = line;
+  }
 
   const block = [];
   const added = [];
   let pendingComments = [];
-  for (const raw of upstreamText.split(/\r?\n/)) {
+  for (const raw of upstreamLines) {
     const line = raw.trim();
     if (line === '') { pendingComments = []; continue; }
     if (line.startsWith('#')) { pendingComments.push([raw, line]); continue; }
-    if (seen.has(line)) { pendingComments = []; continue; }
+    if (seen.has(line)) {
+      pendingComments = [];
+      // Restore the precedence upstream gave its own negations. `!test-fixtures/**` sits
+      // AFTER `applications.md` in upstream's .gitignore so that it wins; an install that
+      // already had the negation but not the newer pattern skipped it as present and got
+      // the pattern appended after it, which inverted that and re-ignored files upstream's
+      // own suite requires to be committed (#4127). Repeating it HERE, at the point
+      // upstream lists it, is what keeps the interleaving intact: a negation upstream puts
+      // between two appended rules must land between them, not after both.
+      //
+      // Only a negation the local file ALREADY has needs this: one it lacks was appended
+      // by this same loop, in upstream's own order. And only after something has been
+      // appended — before that there is nothing to outrank, so repeating it would hand it
+      // a win upstream never gave it. Repeating a line is not the same as rewriting one,
+      // so the promise never to modify a local line still holds, and a duplicate negation
+      // is a no-op to git.
+      if (
+        added.length > 0 &&
+        line.startsWith('!') &&
+        line !== protectedDirectoryNegation &&
+        localLines.has(line)
+      ) block.push(raw);
+      continue;
+    }
     // Carry the rule's own rationale across with it. Several of these comments
     // are the only record of WHY a path is ignored (which ones hold PII, why a
     // glob has a trailing `*`), and an install that gets the pattern without
@@ -2067,11 +2106,12 @@ export function reconcileGitignore(localText, upstreamText) {
   // own array slot, so the file can be re-assembled byte-for-byte from the
   // parts on either side of the chosen insertion point — this function's
   // verbatim-preservation guarantee extends to lines it is not touching.
-  const DIR_NEGATION_RE = /^!.+\/(\*\*)?$/;
   const parts = localText.split(/(\r?\n)/);
-  let insertAt = -1; // index into `parts` of the negation LINE (even slot)
-  for (let i = 0; i < parts.length; i += 2) {
-    if (DIR_NEGATION_RE.test(parts[i].trim())) insertAt = i;
+  let insertAt = -1; // index into `parts` of the protected negation LINE (even slot)
+  if (protectedDirectoryNegation) {
+    for (let i = 0; i < parts.length; i += 2) {
+      if (parts[i].trim() === protectedDirectoryNegation) insertAt = i;
+    }
   }
 
   if (insertAt === -1) {
