@@ -57,25 +57,33 @@ export function resolveNpmShim(binPath, deps = {}) {
   const dir = p.dirname(abs0);
   const base = p.basename(abs0, ext);
   const cmdShim = p.join(dir, `${base}.cmd`);
+  const batShim = p.join(dir, `${base}.bat`);
   const shShim = p.join(dir, base);
 
-  const target = readTarget(cmdShim, p, exists, readFile) ?? readTarget(shShim, p, exists, readFile);
-  if (!target) return passthrough;
+  // Try every possible npm shim in order and validate each target before
+  // accepting it. A stale `.cmd` shim must not prevent a usable `.bat` or bare
+  // shim from resolving; npm and package managers can leave sibling shims out
+  // of sync during upgrades.
+  for (const shimPath of [cmdShim, batShim, shShim]) {
+    const target = readTarget(shimPath, p, exists, readFile);
+    if (!target) continue;
 
-  // The shim references its target relative to its own directory (`%dp0%` /
-  // `$basedir`). Resolve against that dir and refuse anything that escapes it:
-  // a shim is data on disk, not a promise, and it must not be able to point
-  // the spawn at an arbitrary file elsewhere.
-  const abs = p.resolve(dir, target);
-  const dirWithSep = dir.endsWith(p.sep) ? dir : dir + p.sep;
-  if (!abs.startsWith(dirWithSep)) return passthrough;
-  if (!exists(abs)) return passthrough;
+    // The shim references its target relative to its own directory (`%dp0%` /
+    // `$basedir`). Resolve against that dir and refuse anything that escapes it:
+    // a shim is data on disk, not a promise, and it must not be able to point
+    // the spawn at an arbitrary file elsewhere.
+    const abs = p.resolve(dir, target);
+    const dirWithSep = dir.endsWith(p.sep) ? dir : dir + p.sep;
+    if (!abs.startsWith(dirWithSep)) continue;
+    if (!exists(abs)) continue;
 
-  const targetExt = p.extname(abs).toLowerCase();
-  if (targetExt === ".exe" || targetExt === ".com") return { file: abs, prefixArgs: [] };
-  if (targetExt === ".js" || targetExt === ".mjs" || targetExt === ".cjs") {
-    return { file: execPath, prefixArgs: [abs] };
+    const targetExt = p.extname(abs).toLowerCase();
+    if (targetExt === ".exe" || targetExt === ".com") return { file: abs, prefixArgs: [] };
+    if (targetExt === ".js" || targetExt === ".mjs" || targetExt === ".cjs") {
+      return { file: execPath, prefixArgs: [abs] };
+    }
   }
+
   return passthrough;
 }
 

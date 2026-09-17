@@ -116,6 +116,28 @@ test("a shim whose target is missing on disk passes through (spawn reports the r
   assert.deepEqual(r, { file: shim, prefixArgs: [] });
 });
 
+test("a stale .cmd shim falls through to a valid .bat sibling", () => {
+  const batShimExe = cmdShimExe.replace("claude.exe", "claude-bat.exe");
+  const files = {
+    [at("claude.cmd")]: cmdShimExe, // target missing on disk
+    [at("claude.bat")]: batShimExe,
+    [at("node_modules", "@anthropic-ai", "claude-code", "bin", "claude-bat.exe")]: "",
+  };
+  const r = resolveNpmShim(path.join(npm, "claude.cmd"), fakeFs(files));
+  assert.equal(norm(r.file), at("node_modules", "@anthropic-ai", "claude-code", "bin", "claude-bat.exe"));
+  assert.deepEqual(r.prefixArgs, []);
+});
+
+test("a standalone .bat shim resolves when no .cmd sibling exists", () => {
+  const files = {
+    [at("claude.bat")]: cmdShimExe,
+    [at("node_modules", "@anthropic-ai", "claude-code", "bin", "claude.exe")]: "",
+  };
+  const r = resolveNpmShim(path.join(npm, "claude.bat"), fakeFs(files));
+  assert.equal(norm(r.file), at("node_modules", "@anthropic-ai", "claude-code", "bin", "claude.exe"));
+  assert.deepEqual(r.prefixArgs, []);
+});
+
 test("a shim pointing outside its own directory is refused", () => {
   // A crafted shim is just a file; it must not redirect the spawn elsewhere.
   // Four `..` so it actually lands ON the planted file below: the guard, not a
