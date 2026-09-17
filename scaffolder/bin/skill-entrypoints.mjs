@@ -36,6 +36,14 @@ export const SKILL_ENTRYPOINTS = [
     path: '.kimi/skills/career-ops/SKILL.md',
     pointer: '../../../.agents/skills/career-ops/SKILL.md',
   },
+  {
+    path: '.deepseek/skills/career-ops/SKILL.md',
+    pointer: '../../../.agents/skills/career-ops/SKILL.md',
+  },
+  {
+    path: '.deepseek/skills/deepseek/SKILL.md',
+    pointer: '../../../.agents/skills/career-ops/SKILL.md',
+  },
 ];
 
 function repoPath(root, path) {

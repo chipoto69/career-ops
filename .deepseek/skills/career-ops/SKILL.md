@@ -1,1 +1,1 @@
-../../../.agents/skills/deepseek/SKILL.md
+../../../.agents/skills/career-ops/SKILL.md
