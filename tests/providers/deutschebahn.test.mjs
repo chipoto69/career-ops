@@ -59,6 +59,39 @@ try {
   if (dbOpts.every((o) => o?.redirect === 'error')) pass('deutschebahn.fetch() passes redirect:\'error\' on every request');
   else fail(`deutschebahn.fetch() redirect option wrong: ${JSON.stringify(dbOpts.map((o) => o?.redirect))}`);
 
+  // Retry contract — this must fail if the provider goes back to a direct
+  // ctx.fetchText call while keeping the same options. One transient failure is
+  // retried and then succeeds; a deterministic 4xx is not retried.
+  let retryCalls = 0;
+  let retrySleeps = 0;
+  const retryCtx = {
+    sleep: async () => { retrySleeps++; },
+    fetchText: async () => {
+      retryCalls++;
+      if (retryCalls === 1) throw new TypeError('This operation was aborted');
+      return '<html>' + dbHit('800001', 'Retry Succeeds', 'Berlin, Deutschland') + '</html>';
+    },
+  };
+  const retryJobs = await db.fetch({ name: 'Deutsche Bahn', api: 'https://db.jobs/service/search/de-de/5441588', max_pages: 1 }, retryCtx);
+  if (retryJobs.length === 1 && retryCalls === 2 && retrySleeps === 1) pass('deutschebahn.fetch() retries one transient fetchText failure before succeeding');
+  else fail(`deutschebahn.fetch() retry drift: jobs=${retryJobs.length}, calls=${retryCalls}, sleeps=${retrySleeps}`);
+
+  let hardCalls = 0;
+  const hardErr = new Error('HTTP 400 Bad Request');
+  hardErr.status = 400;
+  const hardCtx = {
+    sleep: async () => fail('deutschebahn.fetch() should not sleep/retry after a deterministic 4xx'),
+    fetchText: async () => { hardCalls++; throw hardErr; },
+  };
+  let hardThrew = false;
+  try {
+    await db.fetch({ name: 'Deutsche Bahn', api: 'https://db.jobs/service/search/de-de/5441588', max_pages: 1 }, hardCtx);
+  } catch (e) {
+    hardThrew = e === hardErr;
+  }
+  if (hardThrew && hardCalls === 1) pass('deutschebahn.fetch() does not retry a deterministic non-transient HTTP error');
+  else fail(`deutschebahn.fetch() should not retry 4xx errors; threw=${hardThrew}, calls=${hardCalls}`);
+
   // max_pages safety valve — a small explicit cap stops the walk even though
   // every page keeps returning fresh ids (DB's board runs into the thousands,
   // so this cap is the only thing bounding a runaway scan).

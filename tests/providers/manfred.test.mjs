@@ -138,6 +138,8 @@ try {
   else fail('id-less offer should be dropped');
   if (normalizeManfredOffer({ ...activeOffer, slug: '' }) === null) pass('normalizeManfredOffer drops an offer with no slug');
   else fail('slug-less offer should be dropped');
+  if (normalizeManfredOffer({ ...activeOffer, slug: 'bad\uD800slug' }) === null) pass('normalizeManfredOffer drops a slug containing a lone surrogate instead of throwing');
+  else fail('a lone-surrogate slug should be dropped before URL construction');
 
   // company falls back to the entry name
   const bare = normalizeManfredOffer({ ...activeOffer, company: null }, 'EntryName');
@@ -149,10 +151,13 @@ try {
   const calls = [];
   const ctx = {
     transport: 'http',
+    sleep: async () => { calls.push({ type: 'sleep' }); },
     fetchJson: async (url, options) => {
-      calls.push(url);
+      calls.push({ type: 'fetch', url, options });
       if (options?.redirect !== 'error') throw new Error(`fetchJson without redirect:'error': ${JSON.stringify(options)}`);
+      if (options?.timeoutMs !== 25_000) throw new Error(`fetchJson without 25s timeout: ${JSON.stringify(options)}`);
       if (new URL(url).hostname !== 'www.getmanfred.com') throw new Error(`fetchJson off-host: ${url}`);
+      if (calls.filter((c) => c.type === 'fetch').length === 1) throw new TypeError('This operation was aborted');
       return [activeOffer, { ...activeOffer, id: 8418, slug: 'other', status: 'CLOSED' }];
     },
     fetchText: async () => { throw new Error('fetchText should not be called'); },
@@ -163,10 +168,17 @@ try {
   } else {
     fail(`manfred.fetch() returned ${JSON.stringify(jobs.map((j) => j.url))}`);
   }
-  if (calls.length === 1 && calls[0] === 'https://www.getmanfred.com/api/v2/public/offers?lang=EN') {
-    pass('manfred.fetch() makes exactly one request, with the required lang');
+  const fetchCalls = calls.filter((c) => c.type === 'fetch');
+  const sleepCalls = calls.filter((c) => c.type === 'sleep');
+  if (fetchCalls.length === 2 && sleepCalls.length === 1 && fetchCalls.every((c) => c.url === 'https://www.getmanfred.com/api/v2/public/offers?lang=EN')) {
+    pass('manfred.fetch() retries one transient fetchJson failure, then makes the required lang request');
   } else {
-    fail(`manfred.fetch() made ${calls.length} request(s): ${JSON.stringify(calls)}`);
+    fail(`manfred.fetch() retry/request drift: ${JSON.stringify(calls)}`);
+  }
+  if (fetchCalls.every((c) => c.options?.redirect === 'error' && c.options?.timeoutMs === 25_000)) {
+    pass('manfred.fetch() passes redirect:\'error\' and the 25s catalogue timeout on every request');
+  } else {
+    fail(`manfred.fetch() options drift: ${JSON.stringify(fetchCalls.map((c) => c.options))}`);
   }
 
   // unexpected shape throws
