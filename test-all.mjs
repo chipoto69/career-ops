@@ -2013,10 +2013,14 @@ for (const pattern of leakPatterns) {
     ['grep', '-n', pattern, '--', ...grepPathspecs],
     { stdio: ['pipe', 'pipe', 'ignore'] }
   );
-      if (allowedFiles.some(a => file === a || file.endsWith('/' + a))) continue;
-      if (file === 'dashboard/go.mod' || file.endsWith('/dashboard/go.mod')) continue;
-      leakFound = true;
-    }
+  if (!result) continue;
+  for (const line of result.split('\n').filter(Boolean)) {
+    const firstColon = line.indexOf(':');
+    const file = firstColon === -1 ? line : line.slice(0, firstColon);
+    if (allowedFiles.some(a => file === a || file.endsWith('/' + a))) continue;
+    if (file === 'dashboard/go.mod' || file.endsWith('/dashboard/go.mod')) continue;
+    leakFound = true;
+    fail(`Personal data leak (${pattern}): ${line.slice(0, 100)}`);
   }
 }
 if (!leakFound) {
