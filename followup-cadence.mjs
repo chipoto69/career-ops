@@ -259,7 +259,7 @@ const CROSS_REF_LOOKBACK = 120;
 // separator excludes `.!?` so a sentence boundary cannot be swallowed into it.
 // Same vocabulary as tracker-parse.mjs's REQ_NUMBER_RE (used by merge-tracker.mjs), which reads the same
 // Notes column.
-const REQ_LABELLED_HASH_RE = /\b(?:job\s*id|posting\s*id|requisition|req|jr|job|posting|ref(?:erence)?)[\s:_-]*$/i;
+const REQ_LABELLED_HASH_RE = /\b(?:job\s*id|posting\s*id|requisition|req|jr|job|posting|ref(?:erence)?|r_)[\s:_-]*$/i;
 
 /**
  * Whether the apply-date at `index` is being cited ABOUT ANOTHER ROW.

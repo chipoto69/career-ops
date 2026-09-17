@@ -65,6 +65,7 @@ const {
   resolveCadenceConfig,
   loadProfileCadence,
   parseAppliedDaysOverride,
+  parseAppliedDate,
 } = cadence;
 
 
@@ -212,6 +213,21 @@ eq(
 for (const raw of ['Hired', 'Accepted', 'accept', 'Contratado', 'contratada']) {
   eq(`normalizeStatus('${raw}') canonicalizes to hired`, normalizeStatus(raw), 'hired');
 }
+
+// A requisition id written as `R_#` is this row's own ATS id, not a
+// cross-row tracker reference. If followup-cadence treats it as `#123`, the
+// measured applied date is discarded and the row falls back to the evaluation
+// date.
+eq(
+  'parseAppliedDate preserves applied date after an R_# requisition label',
+  parseAppliedDate('R_1488728 Applied 2026-08-06'),
+  '2026-08-06',
+);
+eq(
+  'parseAppliedDate still treats an unlabeled # reference as another row',
+  parseAppliedDate('#1488728 Applied 2026-08-06'),
+  null,
+);
 
 // #2268 — the suite pins the profile so a user's own followup_cadence can't
 // turn a healthy install red. These two guard the pin from the opposite
