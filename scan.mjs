@@ -2465,11 +2465,11 @@ export function loadBlacklist(filePath = BLACKLIST_PATH) {
 }
 
 /**
- * Parse data/aggregator-domains.txt into a Map keyed by domain.
+ * Parse examples/aggregator-domains.txt into a Map keyed by domain.
  * Format: `domain.com # reason`
  * Skips blank lines and lines starting with `#`.
  *
- * @param {string} text - Raw data/aggregator-domains.txt content.
+ * @param {string} text - Raw examples/aggregator-domains.txt content.
  * @returns {Map<string, {domain: string, reason: string}>}
  */
 export function parseAggregatorDomains(text) {
@@ -2492,10 +2492,10 @@ export function parseAggregatorDomains(text) {
   return entries;
 }
 
-export const AGGREGATOR_DOMAINS_PATH = process.env.CAREER_OPS_AGGREGATOR_DOMAINS || path.join(DATA_ROOT, 'data/aggregator-domains.txt');
+export const AGGREGATOR_DOMAINS_PATH = process.env.CAREER_OPS_AGGREGATOR_DOMAINS || path.join(CODE_ROOT, 'examples/aggregator-domains.txt');
 
 /**
- * Load data/aggregator-domains.txt dataset.
+ * Load the repo-owned example aggregator-domain dataset.
  *
  * @param {string} [filePath] - Override for tests.
  * @returns {Map<string, {domain: string, reason: string}>}
