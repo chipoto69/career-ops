@@ -114,9 +114,10 @@ function stripInline(fragment) {
  */
 function parseFontFamilies(declaration) {
   return declaration
-    // `var(--name` plus the comma before its fallback; the orphaned `)` that
-    // closed the reference is removed with the remaining punctuation below.
-    .replace(/var\(\s*--[\w-]*\s*,?/gi, ' ')
+    // `var(--name` plus the comma before its fallback; CSS custom-property
+    // names can include non-ASCII characters and escaped code points. The
+    // orphaned `)` that closed the reference is removed with punctuation below.
+    .replace(/var\(\s*--(?:\\[\s\S]|[^\s,)])+\s*,?/giu, ' ')
     .split(',')
     .map(raw => raw.replace(/['"()]/g, '').trim().toLowerCase())
     .filter(Boolean);
@@ -587,6 +588,11 @@ function runSelfTest() {
   // …but a font named in var()'s fallback slot must not hide behind it.
   const varFallback = auditAts(buildCleanHtml({ font: "var(--font-family, 'Comic Sans MS'), sans-serif" }));
   check('a font in a var() fallback is still flagged', hasIssue(varFallback.issues, 'comic sans ms'));
+
+  // CSS custom-property names can be non-ASCII; the name itself is not a font
+  // and must not be left behind as a bogus family after stripping var().
+  const nonAsciiVarFont = auditAts(buildCleanHtml({ font: 'var(--font-家族), Arial, sans-serif' }));
+  check('a non-ASCII var() custom property name is not reported as a font', !hasIssue(nonAsciiVarFont.issues, 'non-standard font'));
 
   // The Korean and Traditional Chinese stacks the template declares
   // unconditionally must not penalise a CV that never renders them.
