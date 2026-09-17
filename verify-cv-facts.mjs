@@ -247,11 +247,11 @@ export function stripMarkup(text, { keepLineBreaks = false } = {}) {
     // and that stray star can pair with an unrelated later `*...*` span and
     // mangle both. Bold before italic, so the italic pass never splits a
     // `**...**` run in two. Bold may span a wrapped line (`keepLineBreaks`);
-    // italic is deliberately kept single-line, to stay conservative about the
-    // more collision-prone single-asterisk form.
+    // italic is deliberately kept to one non-whitespace token, so it strips
+    // `and*emphasis*done` without pairing separate footnote stars.
     .replace(/\*\*(\S(?:[\s\S]*?\S)?)\*\*/g, ' $1 ')
     .replace(/__(\S(?:[\s\S]*?\S)?)__/g, ' $1 ')
-    .replace(/(?<![\p{L}\p{N}_])\*(\S(?:[^\n*]*\S)?)\*(?![\p{L}\p{N}_])/gu, ' $1 ')
+    .replace(/\*([^\s*\n]+)\*/g, ' $1 ')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
     // keepLineBreaks preserves a newline as a CLAUSE boundary for the plan-horizon
