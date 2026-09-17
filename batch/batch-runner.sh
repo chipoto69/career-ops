@@ -899,10 +899,38 @@ process_offer() {
       jd_prefetch_words="${jd_prefetch_words:-0}"
       if [[ "$jd_prefetch_words" -lt "$prefetch_min_words" ]]; then
         : > "$jd_file"
-        echo "    ℹ️  JD prefetch: thin content (${jd_prefetch_words} words) — worker will WebFetch"
+        echo "    ℹ️  JD prefetch: thin content (${jd_prefetch_words} words) — trying ATS API fetcher"
       else
         echo "    ℹ️  JD prefetch: ${jd_prefetch_words} words written to JD file"
       fi
+  fi
+
+  # If the static fetch produced no usable JD, try the deterministic ATS API
+  # fetcher before launching the worker. Pass the offer URL as an argument, not
+  # as worker-authored shell source, so hostile URLs cannot become commands in a
+  # bypass-permissions worker session.
+  if [[ ! -s "$jd_file" && -f "$PROJECT_DIR/fetch-jd.mjs" ]]; then
+    local ats_jd_tmp
+    ats_jd_tmp="$(mktemp "${TMPDIR:-/tmp}/batch-jd-api-${id}.XXXXXX")"
+    if node "$PROJECT_DIR/fetch-jd.mjs" "$url" > "$ats_jd_tmp" 2>/dev/null && [[ -s "$ats_jd_tmp" ]]; then
+      mv "$ats_jd_tmp" "$jd_file"
+      jd_prefetch_words=$(node -e "
+        const fs = require('fs');
+        try {
+          const text = fs.readFileSync(process.argv[1], 'utf-8')
+            .replace(/\s+/g, ' ')
+            .trim();
+          fs.writeFileSync(process.argv[1], text);
+          process.stdout.write(String(text.split(' ').filter(Boolean).length));
+        } catch (e) { process.stdout.write('0'); }
+      " "$jd_file" 2>/dev/null) || jd_prefetch_words=0
+      jd_prefetch_words="${jd_prefetch_words//[^0-9]/}"
+      jd_prefetch_words="${jd_prefetch_words:-0}"
+      echo "    ℹ️  JD API fetch: ${jd_prefetch_words} words written to JD file"
+    else
+      rm -f "$ats_jd_tmp"
+      echo "    ℹ️  JD API fetch: no ATS hit — worker will WebFetch"
+    fi
   fi
 
   echo "--- Processing offer #$id: $url (report $report_num, attempt $((retries + 1)))"

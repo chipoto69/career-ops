@@ -247,6 +247,22 @@ if (/JD prefetch.*words written/.test(SRC)) {
   fail('success log message is missing — operators cannot verify prefetch outcome');
 }
 
+// The ATS API fallback must run in the trusted runner before worker launch, not
+// as text in the worker prompt. The URL must be passed as an argument, so shell
+// metacharacters in job URLs cannot become commands in bypass-permissions mode.
+if (/node "\$PROJECT_DIR\/fetch-jd\.mjs" "\$url"/.test(SRC)) {
+  pass('ATS API fallback runs in batch-runner.sh with the offer URL as an argv argument');
+} else {
+  fail('batch-runner.sh must call fetch-jd.mjs as `node "$PROJECT_DIR/fetch-jd.mjs" "$url"` before launching the worker');
+}
+
+const promptSrc = readFileSync(join(ROOT, 'batch/batch-prompt.md'), 'utf-8');
+if (/fetch-jd\.mjs\s+"\{\{URL\}\}"/.test(promptSrc) || /node\s+fetch-jd\.mjs/.test(promptSrc)) {
+  fail('batch-prompt.md still asks the worker to run fetch-jd.mjs with {{URL}} shell interpolation');
+} else {
+  pass('batch-prompt.md no longer asks the worker to shell-run fetch-jd.mjs with {{URL}}');
+}
+
 // ── word-count node snippet ──────────────────────────────────────────────────
 // Extract the node -e program that counts visible words so we can run it in
 // isolation. This ensures the stripping + counting logic stays correct as the
