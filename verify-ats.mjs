@@ -116,11 +116,12 @@ function parseFontFamilies(declaration) {
   return declaration
     // `var(--name` plus the comma before its fallback; the orphaned `)` that
     // closed the reference is removed with the remaining punctuation below.
-    // The name is "any run that is not a separator", not `[\w-]+`: a custom
-    // property may be non-ASCII (`--字体`, `--police-caractères`) or carry a
-    // CSS escape, and an ASCII-only class stops at the first such character —
-    // leaving its tail behind to be reported as a font the CV never named.
-    .replace(/var\(\s*--(?:\\[\s\S]|[^\s,()])*\s*,?/gi, ' ')
+    // The name is "any run that is not a CSS separator", not `[\w-]+` or a
+    // JavaScript `\s`-bounded run: a custom property may be non-ASCII
+    // (`--字体`, `--police-caractères`), carry a CSS escape, or contain NBSP.
+    // JavaScript `\s` treats NBSP as whitespace, but CSS does not, so using it
+    // can leave part of the property name behind as a fake font family.
+    .replace(/var\([ \t\n\f\r]*--(?:\\[\s\S]|[^ \t\n\f\r,()])*[ \t\n\f\r]*,?/gi, ' ')
     .split(',')
     .map(raw => raw.replace(/['"()]/g, '').trim().toLowerCase())
     .filter(Boolean);
@@ -602,6 +603,11 @@ function runSelfTest() {
   // An escaped character inside the name is part of the name, not a separator.
   const varEscaped = auditAts(buildCleanHtml({ font: 'var(--a\\,b), Arial, sans-serif' }));
   check('an escaped character in a custom-property name is consumed', !hasIssue(varEscaped.issues, 'non-standard font'));
+
+  // NBSP is not CSS whitespace; it may appear inside a custom-property name and
+  // must be consumed with the name rather than left behind as a fake family.
+  const varNbsp = auditAts(buildCleanHtml({ font: 'var(--font\u00a0family, Arial), sans-serif' }));
+  check('NBSP in a custom-property name is consumed', !hasIssue(varNbsp.issues, 'non-standard font'));
 
   // The Korean and Traditional Chinese stacks the template declares
   // unconditionally must not penalise a CV that never renders them.
