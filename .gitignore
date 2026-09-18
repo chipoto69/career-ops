@@ -225,8 +225,9 @@ data/intake-state.json
 # Unanchored, like the .db rule below and for the same reason: getCareerOpsRoot()
 # resolves a relative CAREER_OPS_ROOT (or .career-ops-data marker) against the
 # codebase directory, so a data root configured as `career-data` puts these inside
-# the checkout, where an anchored rule would not reach them. The upgrade fixtures
-# that share these names stay tracked via the `!test-fixtures/**` rule further down,
-# which is a later pattern and therefore wins.
+# the checkout, where an anchored rule would not reach them. Keep upgrade fixtures
+# re-included after these unanchored rules; gitignore uses the last matching
+# pattern, so the earlier fixture exception above is not enough.
 applications.md
 follow-ups.md
+!test-fixtures/**
