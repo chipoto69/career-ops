@@ -249,19 +249,26 @@ async function main() {
   const recommendations = [];
 
   const jevOn = jevAvailable();
-
-  for (const [index, match] of matched.entries()) {
+  const classifications = await Promise.all(matched.map(async (match) => {
     const cand = candidates.find(c => c.message_id === match.message_id);
     let classification = classifyReply(cand);
 
     // Jev fallback: only when the deterministic matcher found nothing —
-    // never overrides a keyword hit, opt-in via TYPESAFE_API_KEY.
+    // never overrides a keyword hit, opt-in via TYPESAFE_API_KEY. Launch these
+    // lookups before printing so one slow Jev response cannot serially delay
+    // later Unknown candidates; Promise.all preserves matched order here.
     if (classification.type === 'Unknown' && jevOn) {
       const jevResult = await classifyReplyWithJev(cand);
       if (jevResult) {
         classification = jevResult;
       }
     }
+    return classification;
+  }));
+
+  for (const [index, match] of matched.entries()) {
+    const cand = candidates.find(c => c.message_id === match.message_id);
+    const classification = classifications[index];
 
     let headerStr = '';
     if (match.application_num !== null) {
