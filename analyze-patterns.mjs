@@ -1675,7 +1675,7 @@ if (isMainModule(import.meta.url)) {
     if (rawMinThreshold === undefined || !/^\d+$/.test(String(rawMinThreshold)) ||
         !Number.isSafeInteger(Number(rawMinThreshold))) {
       console.error(`Error: --min-threshold requires a non-negative integer, got "${rawMinThreshold ?? ''}"`);
-      process.exit(1);
+      process.exit(2);
     }
     MIN_THRESHOLD = Number(rawMinThreshold);
   }
@@ -1684,7 +1684,7 @@ if (isMainModule(import.meta.url)) {
     if (rawMinVendorN === undefined || !/^\d+$/.test(String(rawMinVendorN)) ||
         !Number.isSafeInteger(Number(rawMinVendorN)) || Number(rawMinVendorN) < 1) {
       console.error(`Error: --min-vendor-n requires a positive integer, got "${rawMinVendorN ?? ''}"`);
-      process.exit(1);
+      process.exit(2);
     }
     MIN_VENDOR_N = Number(rawMinVendorN);
   }
