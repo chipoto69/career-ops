@@ -27,10 +27,18 @@
  * Network: only the sweep / --add paths hit the network. Importing the module
  * (for tests) runs nothing — main() is guarded — and all network access goes
  * through an injectable `fetchJson`, so the pure logic is testable offline.
+ * `--help`/`-h` and an unrecognized flag are both handled BEFORE that network
+ * work starts (#4250) — this script had never adopted `lib/cli-flags.mjs`'s
+ * `validateFlags()`, unlike its siblings (audit-portals.mjs, scan.mjs), so
+ * `--help` fell through main()'s argument checks untouched and ran the exact
+ * same full portals.yml sweep as no flags at all. On a config with ~170
+ * tracked companies that is minutes of sequential network probing with zero
+ * output until it finishes — indistinguishable from a genuine hang, which is
+ * exactly how it was reported: "`--help` behaves the same [as no args]".
  */
 
 import { existsSync, readFileSync } from 'fs';
-import { dirname, resolve } from 'path';
+import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import * as yaml from 'js-yaml';
 
@@ -40,8 +48,17 @@ import { asciiFold } from './lib/ascii-fold.mjs';
 import { flagValue, hasFlag, validateFlags } from './lib/cli-flags.mjs';
 import { loadProviders, resolveProvider } from './providers/_registry.mjs';
 import { isMainModule } from './lib/is-main-module.mjs';
+import { getCareerOpsRoot } from './path-resolver.mjs';
 
-const DEFAULT_PORTALS_PATH = process.env.CAREER_OPS_PORTALS || 'portals.yml';
+// getCareerOpsRoot() (not a bare 'portals.yml'): scan.mjs, scan-ats-full.mjs
+// and audit-portals.mjs all resolve their default portals.yml against the
+// Data Root (CAREER_OPS_ROOT / CAREER_OPS_DATA_DIR / .career-ops-data —
+// AGENTS.md's Path Resolution Override & Precedence), so this script was the
+// one place still assuming the Data Root equals the current working
+// directory — the same split-checkout mismatch class as #3867, just for
+// this script's default path (CodeRabbit, #4254 review).
+const DATA_ROOT = getCareerOpsRoot();
+const DEFAULT_PORTALS_PATH = process.env.CAREER_OPS_PORTALS || join(DATA_ROOT, 'portals.yml');
 
 // The core providers/ directory — the SAME plugins the scanner loads. Resolved
 // from this file's location so it's independent of the caller's cwd.
@@ -718,35 +735,55 @@ const USAGE = `Usage:
 
 async function main() {
   const args = process.argv.slice(2);
-  // Flags FIRST, before anything reaches the network: this script probes every
-  // tracked company, so a flag that falls through to the default sweep spends
-  // minutes on 100+ requests while printing nothing — indistinguishable from a
-  // hang, and reported as one (#4250). Same shape as audit-portals.mjs, and the
-  // same class lib/cli-flags.mjs exists to end: scan.mjs (#2270),
-  // scan-ats-full.mjs (#1633/#1635), reply-watch.mjs (#2743/#2745),
-  // dedup-tracker.mjs (#2744/#2746), doctor.mjs (#2874), fix-slugs.mjs (#2980).
-  if (hasFlag(args, '--help') || hasFlag(args, '-h')) {
-    console.log(USAGE);
-    return;
-  }
+  // Before any network work: an unrecognized flag exits 1, --help/-h prints
+  // USAGE and exits 0. Neither used to be checked at all (#4250) — --help
+  // fell through untouched and triggered the exact same full portals.yml
+  // sweep as no flags, which on a large config can run for minutes with zero
+  // output and reads exactly like a hang.
+  // requireOperand: without it, `--file --strict` reads --strict as the file
+  // path (flagValue() returns args[idx+1] unconditionally, with no check that
+  // it isn't itself another flag), and a bare `--file`/`--file=` reaches
+  // resolve('') — the current directory — which readFileSync() then rejects
+  // with a raw EISDIR instead of a usage error (CodeRabbit, #4254 review).
+  // Same shape already fixed the same way in process-quality.mjs, doctor.mjs,
+  // detect-reposts.mjs and others. flagValue(), not indexOf(), keeps
+  // `--add=cursor` / `--file=path` from silently dropping their values.
   validateFlags(args, KNOWN_FLAGS, USAGE, { valueFlags: VALUE_FLAGS, requireOperand: true });
 
   const strict = hasFlag(args, '--strict');
   const fetchJson = defaultFetchJson;
 
-  // flagValue, not indexOf: indexOf cannot see `--add=cursor` / `--file=path`,
-  // so that form silently dropped the value and swept the default file instead.
   if (hasFlag(args, '--add')) {
     await runAdd(flagValue(args, '--add') || '', { fetchJson });
     return;
   }
 
-  const filePath = resolve(flagValue(args, '--file') || DEFAULT_PORTALS_PATH);
+  // requireOperand above catches a bare `--file` (nothing follows) and
+  // `--file --anotherflag` (the next token looks like a flag), but not
+  // `--file=` — an explicit empty value after `=` is a single token
+  // (`--file=`) that never matches the bare `--file` requireOperand checks
+  // for, so it would otherwise reach resolve('') the same way.
+  const fileArg = flagValue(args, '--file');
+  if (hasFlag(args, '--file') && !fileArg) {
+    console.error('Error: --file requires a value');
+    process.exit(1);
+  }
+
+  const filePath = resolve(
+    hasFlag(args, '--file') ? fileArg : DEFAULT_PORTALS_PATH,
+  );
 
   // Load the scanner's provider plugins so non-ATS boards (Workday,
   // SuccessFactors, SmartRecruiters, …) get a real reachability probe instead
   // of an un-actionable "skipped".
   const providers = await loadProviders(PROVIDERS_DIR);
+  // Fold in enabled keyed/auth-gated provider plugins, exactly as scan.mjs does
+  // — without this the verifier resolves only providers/*.mjs and disagrees
+  // with the scanner on every plugin-provider entry (#4026). No-op for a
+  // plugin-free install (mergeProviderPlugins returns before config/plugins.yml
+  // is read when it is absent).
+  const { mergeProviderPlugins } = await import('./plugins/_engine.mjs');
+  await mergeProviderPlugins(providers, { root: dirname(PROVIDERS_DIR) });
   const httpCtx = makeHttpCtx();
   const { found, results } = await verifyPortalsFile(filePath, { fetchJson, providers, httpCtx });
   if (!found) {
