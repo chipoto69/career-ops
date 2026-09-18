@@ -17,9 +17,9 @@ try {
     '# Header comment',
     '# Indeed (indeed.com) is deliberately excluded',
     '',
-    'recruit.net # aggregator, reposts listings from other boards',
+    'recruit.net. # aggregator, reposts listings from other boards',
     'zippia.com # aggregator, scrapes and reposts job listings',
-    '  adzuna.com # parent domain example  ',
+    '  adzuna.com. # parent domain example  ',
   ].join('\n');
 
   const parsedMap = parseAggregatorDomains(sample);
@@ -48,14 +48,22 @@ try {
     fail('checkAggregatorRepost failed for subdomain match: ' + JSON.stringify(subMatch));
   }
 
-  // 2b. Test trailing dot in hostname
+  // 2b. Test trailing dot normalization in configured domains and hostnames
   const trailingDotOffer = { url: 'https://recruit.net./job/12345', company: 'Acme', title: 'Developer' };
+  const trailingDotSubdomainOffer = { url: 'https://uk.adzuna.com./land/ad/99', company: 'Globex', title: 'Designer' };
   const trailingDotMatch = checkAggregatorRepost(trailingDotOffer, parsedMap);
+  const trailingDotSubdomainMatch = checkAggregatorRepost(trailingDotSubdomainOffer, parsedMap);
 
   if (trailingDotMatch && trailingDotMatch.domain === 'recruit.net') {
     pass('checkAggregatorRepost matches hostname with trailing dot');
   } else {
     fail('checkAggregatorRepost failed for hostname with trailing dot: ' + JSON.stringify(trailingDotMatch));
+  }
+
+  if (trailingDotSubdomainMatch && trailingDotSubdomainMatch.domain === 'adzuna.com') {
+    pass('checkAggregatorRepost matches a subdomain when configured domain and hostname have trailing dots');
+  } else {
+    fail('checkAggregatorRepost failed for subdomain with trailing dots: ' + JSON.stringify(trailingDotSubdomainMatch));
   }
 
   // 3. Test checkAggregatorRepost with an unrelated domain (no match)

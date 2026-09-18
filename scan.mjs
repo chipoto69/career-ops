@@ -2533,12 +2533,16 @@ export function parseAggregatorDomains(text) {
       domain = line.slice(0, hashIdx);
       reason = line.slice(hashIdx + 1);
     }
-    domain = domain.trim().toLowerCase();
+    domain = normalizeAggregatorDomain(domain.trim().toLowerCase());
     reason = reason.trim();
     if (!domain) continue;
     entries.set(domain, { domain, reason });
   }
   return entries;
+}
+
+function normalizeAggregatorDomain(domain) {
+  return domain.endsWith('.') ? domain.slice(0, -1) : domain;
 }
 
 export const AGGREGATOR_DOMAINS_PATH = process.env.CAREER_OPS_AGGREGATOR_DOMAINS || path.join(CODE_ROOT, 'data-static/aggregator-domains.txt');
@@ -2566,12 +2570,9 @@ export function checkAggregatorRepost(offer, domainsMap = loadAggregatorDomains(
   if (!offer || !offer.url || !domainsMap || domainsMap.size === 0) return null;
   let hostname;
   try {
-    hostname = new URL(offer.url).hostname.toLowerCase();
+    hostname = normalizeAggregatorDomain(new URL(offer.url).hostname.toLowerCase());
   } catch {
     return null;
-  }
-  if (hostname.endsWith('.')) {
-    hostname = hostname.slice(0, -1);
   }
   if (!hostname) return null;
   for (const [domain, entry] of domainsMap) {
