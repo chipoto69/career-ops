@@ -73,3 +73,68 @@ test("multi-CLI machines get a persistable default, unlike pickSoleInstalled", (
   assert.equal(pickSoleInstalled(clis), null, "sole-pick correctly declines");
   assert.equal(pickDefaultInstalled(clis), "claude", "but a default must still exist to persist");
 });
+
+// Mirror of resolveCliId's post-fetch race guard in src/lib/saved-cli.ts (TS;
+// this suite is .mjs), with storage/fetch injected instead of the real
+// localStorage/fetch globals so the race is deterministic to test.
+function makeStore(initial) {
+  let value = initial ?? null;
+  return {
+    get: () => value,
+    set: (v) => {
+      value = v;
+    },
+  };
+}
+
+async function resolveCliId(store, fetchClis) {
+  const readSaved = () => {
+    try {
+      const raw = store.get();
+      const id = raw ? JSON.parse(raw).cliId : "";
+      return typeof id === "string" && id ? id : null;
+    } catch {
+      return null;
+    }
+  };
+  const persist = (cliId) => {
+    const raw = store.get();
+    const prev = raw ? JSON.parse(raw) : {};
+    store.set(JSON.stringify({ ...prev, mode: prev.mode || "cli", cliId }));
+  };
+
+  const saved = readSaved();
+  if (saved) return saved;
+  const d = await fetchClis();
+  const picked = pickDefaultInstalled(d.clis);
+  if (!picked) return null;
+  const savedMeanwhile = readSaved();
+  if (savedMeanwhile) return savedMeanwhile;
+  persist(picked);
+  return picked;
+}
+
+test("a choice saved while the detection fetch is in flight wins, and is not clobbered", async () => {
+  const store = makeStore(null);
+  const result = await resolveCliId(store, async () => {
+    // Simulate the user saving a different CLI via Config while /api/clis
+    // is still in flight.
+    store.set(JSON.stringify({ mode: "cli", cliId: "codex" }));
+    return { clis: [{ id: "grok", installed: true }] };
+  });
+  assert.equal(result, "codex");
+  assert.equal(JSON.parse(store.get()).cliId, "codex");
+});
+
+test("with no save in flight, the default installed CLI is detected and persisted", async () => {
+  const store = makeStore(null);
+  const result = await resolveCliId(store, async () => ({
+    clis: [
+      { id: "grok", installed: false },
+      { id: "codex", installed: true },
+      { id: "claude", installed: true },
+    ],
+  }));
+  assert.equal(result, "codex");
+  assert.equal(JSON.parse(store.get()).cliId, "codex");
+});

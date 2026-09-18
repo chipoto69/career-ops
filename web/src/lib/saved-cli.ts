@@ -1,4 +1,4 @@
-import { pickSoleInstalled } from "./cli-pick.mjs";
+import { pickDefaultInstalled } from "./cli-pick.mjs";
 
 export const CONFIG_KEY = "career-ops:config";
 
@@ -27,17 +27,22 @@ export function persistCliId(cliId: string) {
 
 export { pickDefaultInstalled, pickSoleInstalled } from "./cli-pick.mjs";
 
-/** Saved Config cliId, or the only installed CLI (and persist that pick). */
+/** Saved Config cliId, or the default installed CLI (and persist that pick). */
 export async function resolveCliId(): Promise<string | null> {
   const saved = readSavedCliId();
   if (saved) return saved;
   try {
     const r = await fetch("/api/clis");
     const d = (await r.json()) as { clis?: { id: string; installed?: boolean }[] };
-    const sole = pickSoleInstalled(d.clis);
-    if (!sole) return null;
-    persistCliId(sole);
-    return sole;
+    const picked = pickDefaultInstalled(d.clis);
+    if (!picked) return null;
+    // The fetch above may have taken a while: re-check for a choice the user
+    // made (e.g. via Config) while it was in flight, so a slow detection
+    // result can never clobber a fresher explicit save.
+    const savedMeanwhile = readSavedCliId();
+    if (savedMeanwhile) return savedMeanwhile;
+    persistCliId(picked);
+    return picked;
   } catch {
     return null;
   }
