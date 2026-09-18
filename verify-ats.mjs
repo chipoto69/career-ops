@@ -158,9 +158,13 @@ function cssTrim(text) {
  * @returns {string}
  */
 function describeFontName(name) {
-  return name.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}\p{Zs}]/gu, ch =>
-    ch === ' ' ? ch : `\\u${ch.codePointAt(0).toString(16).padStart(4, '0')}`
-  );
+  return name.replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}\p{Zs}]/gu, ch => {
+    if (ch === ' ') return ch;
+    const codePoint = ch.codePointAt(0).toString(16);
+    return codePoint.length <= 4
+      ? `\\u${codePoint.padStart(4, '0')}`
+      : `\\u{${codePoint}}`;
+  });
 }
 
 /**
@@ -659,6 +663,9 @@ function runSelfTest() {
   // …and the warning has to name it in a form the reader can act on, or it
   // reports a font that looks exactly like the one they meant to use.
   check('an invisible character in a flagged font is shown as an escape', hasIssue(nbspFont.issues, '\\u00a0arial'));
+
+  const tagFont = auditAts(buildCleanHtml({ font: `'${String.fromCodePoint(0xe0001)}Arial', sans-serif` }));
+  check('a supplementary invisible character in a flagged font is braced', hasIssue(tagFont.issues, '\\u{e0001}arial'));
 
   // Real CSS whitespace around a family name is still trimmed, so the ordinary
   // `'  Arial  '` spelling gains no warning from the above.
