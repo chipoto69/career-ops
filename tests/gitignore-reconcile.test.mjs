@@ -222,6 +222,67 @@ const ok = (cond, msg) => (cond ? pass(msg) : fail(msg));
   eq(lines.filter((l) => l === '!keep/**').length, 1, 'the earlier negation is not repeated');
 }
 
+// ── A directory re-inclusion negation keeps winning (#4189) ─────────────────
+// A bare, unanchored appended pattern (`applications.md`) matches ANYWHERE in
+// the tree, including under a directory a negation re-includes. The invariant
+// is not that the negation appears once — main may repeat it to preserve the
+// user's byte-identical prefix — but that the last matching negation still
+// outranks the added patterns and git resolves the fixture path as tracked.
+{
+  const local = ['node_modules/', '', '!test-fixtures/**', ''].join('\n');
+  const upstream = [
+    'node_modules/',
+    '',
+    'applications.md',
+    'follow-ups.md',
+    '',
+    '!test-fixtures/**',
+    '',
+  ].join('\n');
+  const { text, added } = reconcileGitignore(local, upstream);
+
+  eq(added.join(','), 'applications.md,follow-ups.md', 'both missing patterns are detected as added');
+  ok(text.startsWith(local), "the user's own file remains a verbatim prefix");
+
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+  const negationIndex = lines.lastIndexOf('!test-fixtures/**');
+  const appIndex = lines.indexOf('applications.md');
+  const followIndex = lines.indexOf('follow-ups.md');
+  ok(
+    appIndex !== -1 && followIndex !== -1 && appIndex < negationIndex && followIndex < negationIndex,
+    'the last !test-fixtures/** match outranks the appended patterns',
+  );
+
+  const dir = mkdtempSync(join(tmpdir(), 'co-gitignore-4189-'));
+  try {
+    execFileSync('git', ['init', '-q'], { cwd: dir, timeout: DEFAULT_SCRIPT_TIMEOUT_MS });
+    writeFileSync(join(dir, '.gitignore'), text);
+    mkdirSync(join(dir, 'test-fixtures', 'upgrade', 'data'), { recursive: true });
+    writeFileSync(join(dir, 'test-fixtures', 'upgrade', 'data', 'applications.md'), 'fixture\n');
+    let ignored = true;
+    try {
+      execFileSync('git', ['check-ignore', '--no-index', '-q', 'test-fixtures/upgrade/data/applications.md'], {
+        cwd: dir,
+        timeout: DEFAULT_SCRIPT_TIMEOUT_MS,
+      });
+    } catch (e) {
+      if (e.status === 1) ignored = false;
+    }
+    ok(!ignored, 'git check-ignore --no-index confirms the fixture path is NOT ignored after reconciliation');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+// ── Fallback: no directory negation present → unchanged EOF append (#4189) ──
+{
+  const local = ['cv.md', 'my-scratch-notes/'].join('\n') + '\n';
+  const upstream = ['cv.md', 'my-scratch-notes/', 'applications.md'].join('\n') + '\n';
+  const { text } = reconcileGitignore(local, upstream);
+  ok(text.startsWith(local), 'with no directory negation to protect, the original file is still an unmodified prefix');
+  ok(text.trim().endsWith('applications.md'), 'and the new pattern still lands at EOF, exactly as before this fix');
+}
+
 // ── The shipped .gitignore is self-consistent ────────────────────────────────
 // Reconciling the real file against itself must be a no-op. If it is not, the
 // reconciler would rewrite .gitignore on every single update forever.
