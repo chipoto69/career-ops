@@ -127,13 +127,13 @@ for (const [label, input] of [['a bare address', 'test@example.com'], ['an expli
 //
 // sanitizeUrl() used to DELETE %, # and ~, so a percent-encoded LinkedIn
 // profile, a #fragment or a ~user homepage linked somewhere else in the LaTeX
-// CV (jos%C3%A9 -> josC3A9) while the HTML CV kept the real URL. & went through
+// CV (test%C3%A9 -> testC3A9) while the HTML CV kept the real URL. & went through
 // raw, and inside \resumeProjectHeading's argument a raw & (or %, or #) stops
 // pdflatex, so a project link with a query string broke the whole build. All
 // four are escaped for hyperref now, which writes the literal character into
 // the PDF link in both positions.
 const URL_CASES = [
-  ['a percent-encoded path', 'https://www.linkedin.com/in/jos%C3%A9-garc%C3%ADa', 'https://www.linkedin.com/in/jos\\%C3\\%A9-garc\\%C3\\%ADa'],
+  ['a percent-encoded path', 'https://www.linkedin.com/in/test%C3%A9-user', 'https://www.linkedin.com/in/test\\%C3\\%A9-user'],
   ['a #fragment', 'https://github.com/jdoe/proj#readme', 'https://github.com/jdoe/proj\\#readme'],
   ['a ~user path', 'https://www.cs.example.edu/~jdoe/thesis/', 'https://www.cs.example.edu/\\~jdoe/thesis/'],
   ['a query string with &', 'https://www.youtube.com/watch?v=abc&t=10s', 'https://www.youtube.com/watch?v=abc\\&t=10s'],
@@ -154,7 +154,7 @@ structural === 'https://example.com/abcdef'
 // Both positions a link can take in the rendered template: the header, and a
 // project name inside \resumeProjectHeading's argument.
 const withLinks = renderWithEmail('test@example.com', {
-  linkedin: { url: URL_CASES[0][1], display: 'linkedin.com/in/jose-garcia' },
+  linkedin: { url: URL_CASES[0][1], display: 'linkedin.com/in/test-user' },
   projects: [
     { name: 'Thesis', url: URL_CASES[2][1], dates: '2023', bullets: ['Wrote it'] },
     { name: 'Demo', url: URL_CASES[3][1], dates: '2024', bullets: ['Recorded it'] },
