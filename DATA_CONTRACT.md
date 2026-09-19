@@ -81,7 +81,7 @@ Three declarations are refused, loudly, naming the entry:
 
 ### System File Overlays
 
-If you need to make durable, local customizations to a **system-layer file** (like modifying a dashboard script, provider wiring, or the updater itself), doing so directly would cause your changes to be skipped and eventually warned about as a conflict, requiring you to manually re-apply them. 
+If you need to make durable, local customizations to a **system-layer file** (like modifying a dashboard script, provider wiring, or the updater itself), doing so directly freezes that file at your local content: the updater keeps your version and skips upstream changes for that file until you resolve the divergence or force the upstream copy.
 
 `config/system-overlay.txt` provides an explicit allowlist for these system files.
 
@@ -91,7 +91,7 @@ dashboard/main.go
 update-system.mjs
 ```
 
-When a system file is listed in `config/system-overlay.txt`, the updater changes its behavior for that file:
+When a system file is listed in `config/system-overlay.txt`, the updater changes its behavior for that file so local edits and upstream changes are reconciled instead of one side being silently skipped:
 1. It reads the base upstream version (from the last known update).
 2. It checks out the new upstream version.
 3. It performs a 3-way merge (`git merge-file`) to reapply your local customizations on top of the new upstream content.

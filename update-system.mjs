@@ -2269,6 +2269,7 @@ async function apply() {
     // written first, so the fix is recoverable even from the forced path.
     const preservedPaths = [];
     const overlaysToMerge = [];
+    const overlayDeleteConflicts = [];
     const overlayPaths = localOverlayPaths();
     const baseline = getUpdateBaseline('FETCH_HEAD');
     
@@ -2276,12 +2277,14 @@ async function apply() {
     if (atRisk.length > 0) {
       console.log('');
       console.log(`${atRisk.length} system file(s) differ from upstream because THIS install changed them:`);
+      const backedUpPaths = new Set();
       for (const result of backupSystemFiles(atRisk)) {
         if (result.error) {
           // A .bak we could not write is worth saying out loud, but it must not
           // abort the update — the file itself is still listed either way.
           console.log(`  ${result.file}  (could not write ${result.backup}: ${result.error})`);
         } else {
+          backedUpPaths.add(result.file);
           generatedBackupPaths.add(result.backup);
           console.log(`  ${result.file}  (local copy saved: ${result.backup})`);
         }
@@ -2293,7 +2296,16 @@ async function apply() {
       // below satisfies the source-pattern contract (#2337).
       for (const file of atRisk) {
         const isOverlay = overlayPaths.some((op) => op.endsWith('/') ? file.startsWith(op) : op === file);
-        if (isOverlay) overlaysToMerge.push(file);
+        if (isOverlay && backedUpPaths.has(file)) {
+          let deletedUpstream = false;
+          try { gitQuiet('cat-file', '-e', `FETCH_HEAD:${file}`); }
+          catch { deletedUpstream = true; }
+          if (deletedUpstream) {
+            overlayDeleteConflicts.push(file);
+          } else {
+            overlaysToMerge.push(file);
+          }
+        }
       }
       
       const atRiskKept = atRisk.filter((f) => !overlaysToMerge.includes(f));
@@ -2308,7 +2320,7 @@ async function apply() {
             console.log(`\nReapplying local changes for ${overlaysToMerge.length} overlay file(s)...`);
             for (const file of overlaysToMerge) {
               try {
-                const baseContent = git('show', `${baseline}:${file}`);
+                const baseContent = gitShowRaw(`${baseline}:${file}`);
                 writeFileSync(join(ROOT, `${file}.base`), baseContent);
                 generatedBackupPaths.add(`${file}.base`);
               } catch {
@@ -2320,6 +2332,11 @@ async function apply() {
           if (atRisk.length > 0) {
             console.log('Keeping your versions. They will NOT receive upstream changes.');
             console.log('Re-run with `node update-system.mjs apply --force --confirm` to take the upstream version instead.');
+          }
+          if (overlayDeleteConflicts.length > 0) {
+            console.log(`\n${overlayDeleteConflicts.length} overlay file(s) were deleted upstream but modified locally.`);
+            console.log('Keeping the local version; resolve the delete/modify conflict by hand:');
+            for (const file of overlayDeleteConflicts) console.log(`  - ${file}`);
           }
         }
       }
@@ -2384,6 +2401,7 @@ async function apply() {
         console.log(`\nWARNING: ${conflicts.length} overlay file(s) had merge conflicts!`);
         console.log(`Please resolve the conflicts in these files before continuing:`);
         for (const file of conflicts) console.log(`  - ${file}`);
+        throw new Error('Update aborted: overlay merge conflicts require manual resolution.');
       }
     }
 
