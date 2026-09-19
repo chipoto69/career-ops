@@ -34,9 +34,10 @@ function savedTheme(): Theme | null {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // The inline bootstrap script establishes the correct class before React
-  // hydrates. Starting from the class-derived value prevents an icon flash.
-  const [theme, setThemeState] = useState<Theme>(currentTheme);
+  // Server rendering has no access to localStorage or system preference, so it
+  // always emits the dark snapshot. Start the first client render from the same
+  // snapshot to avoid hydration drift, then sync to the bootstrap class.
+  const [theme, setThemeState] = useState<Theme>("dark");
 
   useEffect(() => {
     const initial = currentTheme();
