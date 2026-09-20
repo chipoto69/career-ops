@@ -19,7 +19,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const { verifyCompanies } = await import(pathToFileURL(join(ROOT, 'verify-portals.mjs')).href);
+const { printResults, verifyCompanies } = await import(pathToFileURL(join(ROOT, 'verify-portals.mjs')).href);
 
 const GH_BOARD = 'https://job-boards.greenhouse.io/temporal';
 const COMPANY = 'Temporal';
@@ -82,6 +82,46 @@ test('a genuinely dead slug reports no refusal', async () => {
   const row = rowFor(rows);
   assert.equal(row.status, 'missing');
   assert.equal(row.suggested?.rejectedAlternate, undefined);
+});
+
+function capturePrintedResults(rows) {
+  const seen = [];
+  const original = console.log;
+  console.log = (line) => { seen.push(String(line)); };
+  try {
+    printResults(rows);
+  } finally {
+    console.log = original;
+  }
+  return seen.join('\n');
+}
+
+test('printed refusal separates owner name from reason', async () => {
+  const rows = await verifyCompanies([entry()], fetchers());
+  const output = capturePrintedResults(rows);
+  assert.match(output, /also found live ashby\/temporal owned by "Temporal Technologies" — owner-mismatch/);
+  assert.doesNotMatch(output, /try undefined\/undefined/);
+});
+
+test('printed refusal strips terminal controls from owner names', () => {
+  const output = capturePrintedResults([{
+    name: COMPANY,
+    ats: 'greenhouse',
+    slug: ALT_SLUG,
+    status: 'missing',
+    errorKind: 'slug_gone',
+    reason: 'slug not found',
+    suggested: {
+      rejectedAlternate: {
+        ats: 'ashby',
+        slug: ALT_SLUG,
+        ownerBoardName: 'Temporal\u001b[31m Evil\u001b[0m\nForge',
+        ownerReason: 'owner-mismatch\u0007',
+      },
+    },
+  }]);
+  assert.match(output, /owned by "Temporal EvilForge" — owner-mismatch/);
+  assert.doesNotMatch(output, /\u001b|\u0007|\nForge/);
 });
 
 test('an empty unconfirmed board is not reported as a refusal', async () => {

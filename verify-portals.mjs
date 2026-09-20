@@ -670,7 +670,18 @@ const ERROR_KIND_LABEL = {
   unknown: 'unresolved',
 };
 
-function printResults(results) {
+function sanitizeTerminalText(value) {
+  return String(value ?? '').replace(/[\u001b\u009b][[\]()#;?]*(?:(?:(?:[a-zA-Z\d]*(?:;[a-zA-Z\d]*)*)?\u0007)|(?:(?:\d{1,4}(?:;\d{0,4})*)?[\dA-PR-TZcf-nq-uy=><~]))|[\u0000-\u001f\u007f-\u009f]/g, '').trim();
+}
+
+function rejectedAlternateDetail(rejected) {
+  const owner = sanitizeTerminalText(rejected.ownerBoardName);
+  const reason = sanitizeTerminalText(rejected.ownerReason) || 'identity unconfirmed';
+  const ownership = owner ? ` owned by "${owner}"` : '';
+  return `; also found live ${rejected.ats}/${rejected.slug}${ownership} — ${reason}`;
+}
+
+export function printResults(results) {
   for (const r of results) {
     const icon = ICON[r.status] || '?';
     // ATS rows carry ats/slug; provider-layer rows carry the provider id.
@@ -683,7 +694,7 @@ function printResults(results) {
     } else if (r.status === 'missing') {
       const kind = ERROR_KIND_LABEL[r.errorKind] || 'unresolved';
       detail = `${source} (${kind}) — ${r.reason || 'unresolved'}`;
-      if (r.suggested) {
+      if (r.suggested?.ats && r.suggested?.slug) {
         detail += ` → try ${r.suggested.ats}/${r.suggested.slug}`;
       }
       // A live alternate whose identity could not be confirmed is reported, never
@@ -691,8 +702,7 @@ function printResults(results) {
       // and `fix-slugs` still will not write it (#4230).
       const rejected = r.suggested?.rejectedAlternate;
       if (rejected) {
-        const who = rejected.ownerBoardName || rejected.ownerReason || 'identity unconfirmed';
-        detail += `; also found live ${rejected.ats}/${rejected.slug} owned by "${who}" — identity unconfirmed`;
+        detail += rejectedAlternateDetail(rejected);
       }
     } else {
       detail = r.reason || '';
