@@ -79,9 +79,14 @@ export function parseCompensation(job) {
       (c) => String(c?.compensationType ?? '').toLowerCase() === 'salary',
     );
     if (!salaryComponents.length) return null;
-    const withRange = salaryComponents.filter(
-      (c) => normalizeNum(c?.minValue) != null || normalizeNum(c?.maxValue) != null,
-    );
+    const withRange = salaryComponents.filter((c) => {
+      const rawInterval = c?.interval;
+      const interval = typeof rawInterval === 'string' ? rawInterval.trim() : '';
+      return (
+        Boolean(INTERVAL_MULTIPLIERS[interval])
+        && (normalizeNum(c?.minValue) != null || normalizeNum(c?.maxValue) != null)
+      );
+    });
     if (!withRange.length) return null;
     // A board can post several salary components; the widest range is the role's
     // band, and the others are usually a narrower sub-tier of the same posting.

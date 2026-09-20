@@ -114,6 +114,25 @@ test('an unknown interval on a component is rejected', () => {
   assert.equal(parseCompensation(jobWith([salary({ interval: '7 MOON' })])), null);
 });
 
+test('skips a wider salary component with an unsupported interval', () => {
+  const invalidWide = salary({
+    interval: '7 MOON',
+    minValue: 100000,
+    maxValue: 400000,
+    currencyCode: 'USD',
+  });
+  const validNarrow = salary({
+    interval: '1 YEAR',
+    minValue: 130000,
+    maxValue: 160000,
+    currencyCode: 'USD',
+  });
+  const result = parseCompensation(jobWith([invalidWide, validNarrow]));
+  assert.equal(result.min, 130000);
+  assert.equal(result.max, 160000);
+  assert.equal(result.currency, 'USD');
+});
+
 test('a nested component with no interval is rejected, not assumed yearly', () => {
   // A component states its own interval. Defaulting it to 1 YEAR would annualize
   // a monthly figure and present it as a salary with nothing signalling it.
