@@ -92,6 +92,15 @@ function historyRows(dir) {
     });
 }
 
+function pipelineUrls(markdown) {
+  return new Set(
+    markdown
+      .split('\n')
+      .map((line) => line.match(/^\s*- \[[ x]\]\s+(https?:\/\/[^\s|]+)/)?.[1])
+      .filter(Boolean),
+  );
+}
+
 const IN_RANGE = 'https://boards.example.com/fixture/2001';
 const BLOCKED = 'https://boards.example.com/fixture/2002';
 
@@ -120,10 +129,11 @@ const BLOCKED = 'https://boards.example.com/fixture/2002';
     const pipeline = existsSync(join(dir, 'data', 'pipeline.md'))
       ? readFileSync(join(dir, 'data', 'pipeline.md'), 'utf-8')
       : '';
-    if (!pipeline.includes(BLOCKED) && pipeline.includes(IN_RANGE)) {
+    const urls = pipelineUrls(pipeline);
+    if (!urls.has(BLOCKED) && urls.has(IN_RANGE)) {
       pass('the recorded posting never reaches pipeline.md — what is filtered is unchanged');
     } else {
-      fail(`pipeline.md leaked the blocked posting (blocked present: ${pipeline.includes(BLOCKED)}, in-range present: ${pipeline.includes(IN_RANGE)})`);
+      fail(`pipeline.md leaked the blocked posting (blocked present: ${urls.has(BLOCKED)}, in-range present: ${urls.has(IN_RANGE)})`);
     }
   } catch (err) {
     fail(`scan over the location fixture failed: ${err.message}`);
