@@ -27,6 +27,7 @@ const ALT_SLUG = 'temporal';
 
 const entry = () => ({ name: COMPANY, enabled: true, api: GH_BOARD });
 const notFound = () => Object.assign(new Error('404'), { status: 404 });
+const hostIs = (url, host) => new URL(url).hostname === host;
 
 /**
  * The probe pair. The configured Greenhouse slug 404s; an Ashby board answers at
@@ -36,12 +37,12 @@ const notFound = () => Object.assign(new Error('404'), { status: 404 });
  */
 function fetchers({ boardTitle = 'Temporal Technologies', jobs = [{ id: 1, title: 'Engineer' }] } = {}) {
   const fetchJson = async (url) => {
-    if (url.includes('job-boards.greenhouse.io')) throw notFound();
-    if (url.includes('posting-api/job-board')) return { jobs };
+    if (hostIs(url, 'job-boards.greenhouse.io')) throw notFound();
+    if (hostIs(url, 'api.ashbyhq.com') && url.includes('/posting-api/job-board/')) return { jobs };
     throw notFound();
   };
   // Ashby's owner endpoint is `https://jobs.ashbyhq.com/<slug>`, read as HTML.
-  const fetchText = async (url) => (url.includes('jobs.ashbyhq.com') ? `<title>${boardTitle}</title>` : '');
+  const fetchText = async (url) => (hostIs(url, 'jobs.ashbyhq.com') ? `<title>${boardTitle}</title>` : '');
   return { fetchJson, fetchText };
 }
 
@@ -110,11 +111,11 @@ test('a confirmed live alternate is still suggested and adoptable', async () => 
   // The board title matches the configured name, so the gate passes.
   const title = COMPANY;
   const fetchJson = async (url) => {
-    if (url.includes('job-boards.greenhouse.io')) throw notFound();
-    if (url.includes('posting-api/job-board')) return { jobs: [{ id: 1, title: 'Eng' }] };
+    if (hostIs(url, 'job-boards.greenhouse.io')) throw notFound();
+    if (hostIs(url, 'api.ashbyhq.com') && url.includes('/posting-api/job-board/')) return { jobs: [{ id: 1, title: 'Eng' }] };
     throw notFound();
   };
-  const fetchText = async (url) => (url.includes('jobs.ashbyhq.com') ? `<title>${title}</title>` : '');
+  const fetchText = async (url) => (hostIs(url, 'jobs.ashbyhq.com') ? `<title>${title}</title>` : '');
 
   const rows = await verifyCompanies([entry()], { fetchJson, fetchText });
   const suggested = rowFor(rows).suggested;
@@ -129,11 +130,11 @@ test('a rejected-only result does not print undefined/undefined', async () => {
   // truthy, and a rejected-only result satisfies that while carrying no
   // top-level ats/slug. The operator saw `try undefined/undefined`.
   const fetchJson = async (url) => {
-    if (url.includes('job-boards.greenhouse.io')) throw notFound();
-    if (url.includes('posting-api/job-board')) return { jobs: [{ id: 1, title: 'Eng' }] };
+    if (hostIs(url, 'job-boards.greenhouse.io')) throw notFound();
+    if (hostIs(url, 'api.ashbyhq.com') && url.includes('/posting-api/job-board/')) return { jobs: [{ id: 1, title: 'Eng' }] };
     throw notFound();
   };
-  const fetchText = async (url) => (url.includes('jobs.ashbyhq.com') ? '<title>Somebody Else Ltd</title>' : '');
+  const fetchText = async (url) => (hostIs(url, 'jobs.ashbyhq.com') ? '<title>Somebody Else Ltd</title>' : '');
 
   const rows = await verifyCompanies([entry()], { fetchJson, fetchText });
   const printed = capturePrintResults(rows);
@@ -145,11 +146,11 @@ test('a rejected-only result does not print undefined/undefined', async () => {
 test('an adoptable suggestion still prints its try line', async () => {
   // The guard above must not silence the line it was protecting.
   const fetchJson = async (url) => {
-    if (url.includes('job-boards.greenhouse.io')) throw notFound();
-    if (url.includes('posting-api/job-board')) return { jobs: [{ id: 1, title: 'Eng' }] };
+    if (hostIs(url, 'job-boards.greenhouse.io')) throw notFound();
+    if (hostIs(url, 'api.ashbyhq.com') && url.includes('/posting-api/job-board/')) return { jobs: [{ id: 1, title: 'Eng' }] };
     throw notFound();
   };
-  const fetchText = async (url) => (url.includes('jobs.ashbyhq.com') ? `<title>${COMPANY}</title>` : '');
+  const fetchText = async (url) => (hostIs(url, 'jobs.ashbyhq.com') ? `<title>${COMPANY}</title>` : '');
 
   const rows = await verifyCompanies([entry()], { fetchJson, fetchText });
   const printed = capturePrintResults(rows);
@@ -162,11 +163,11 @@ test('a control character in a remote board title does not reach the terminal', 
   // put ANSI escapes in our output and rewrite prior lines.
   const hostile = 'Ev\u001b[31mil\u001b[0m Corp';
   const fetchJson = async (url) => {
-    if (url.includes('job-boards.greenhouse.io')) throw notFound();
-    if (url.includes('posting-api/job-board')) return { jobs: [{ id: 1, title: 'Eng' }] };
+    if (hostIs(url, 'job-boards.greenhouse.io')) throw notFound();
+    if (hostIs(url, 'api.ashbyhq.com') && url.includes('/posting-api/job-board/')) return { jobs: [{ id: 1, title: 'Eng' }] };
     throw notFound();
   };
-  const fetchText = async (url) => (url.includes('jobs.ashbyhq.com') ? `<title>${hostile}</title>` : '');
+  const fetchText = async (url) => (hostIs(url, 'jobs.ashbyhq.com') ? `<title>${hostile}</title>` : '');
 
   const rows = await verifyCompanies([entry()], { fetchJson, fetchText });
   const printed = capturePrintResults(rows);
