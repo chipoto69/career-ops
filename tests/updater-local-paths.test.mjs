@@ -27,6 +27,7 @@ import {
   userLayerViolations,
   staleSystemFiles,
   pathFullyPreserved,
+  stagedPathsOutside,
 } from '../update-system.mjs';
 
 /** A throwaway root with an optional declaration file already written. */
@@ -199,6 +200,25 @@ function withStderr(fn) {
     pass('a declared directory is skipped whole, and does not claim sibling system paths');
   } else {
     fail(`#7c expected providers/ preserved and modes/pdf/ not, got ${whole} / ${sibling}`);
+  }
+}
+
+// ── 7d. Preserved local directories stay out of updater-owned commits ──
+//    The index-commit guard must treat a declared `dir/` the same way checkout
+//    and prune do: every staged child belongs to the user, even when the update
+//    owns the surrounding SYSTEM_PATHS directory. Otherwise a staged fork file
+//    under providers/ can be swept into the auto-update commit.
+{
+  const staged = 'providers/my-own-board.mjs\0providers/greenhouse.mjs\0notes/local.txt\0';
+  const unrelated = stagedPathsOutside(
+    ['providers/'],
+    ['providers/'],
+    () => staged,
+  );
+  if (eq(unrelated, ['providers/my-own-board.mjs', 'providers/greenhouse.mjs', 'notes/local.txt'])) {
+    pass('a preserved local directory keeps staged children out of updater-owned commits');
+  } else {
+    fail(`#7d expected provider children plus notes/local.txt unrelated, got ${JSON.stringify(unrelated)}`);
   }
 }
 

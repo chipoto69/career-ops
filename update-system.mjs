@@ -1753,7 +1753,9 @@ export function stagingFileList(pathsToStage, preserved = [], ref = 'FETCH_HEAD'
  * legitimately begin or end with a space and trimming would rewrite it.
  *
  * @param {string[]} owned
- * @param {string[]} [preserved] exact paths the update leaves to the user
+ * @param {string[]} [preserved] paths the update leaves to the user. A
+ *   trailing `/` covers every staged child under that directory, matching the
+ *   local-path declaration contract used before checkout/prune.
  * @param {(...args: string[]) => string} [run] raw git runner; defaults to ROOT
  * @returns {string[]} staged paths the update does not own (empty ⇒ safe to commit the index)
  */
@@ -1775,13 +1777,19 @@ export function stagedPathsOutside(owned, preserved = [], run = (...args) => git
   }
   // Preservation wins over ownership, hence the check BEFORE the owned lookups:
   // being inside an owned directory is exactly the case that would otherwise
-  // claim a preserved file. Exact paths only — the preserved list comes from
-  // `git diff --name-only` / `git ls-files`, which never emit directories.
-  const preservedFiles = new Set(preserved);
+  // claim a preserved file. `preserved` can include declared local directories
+  // such as `providers/`; those cover staged child files too.
+  const preservedFiles = new Set();
+  const preservedDirs = [];
+  for (const entry of preserved) {
+    if (entry.endsWith('/')) preservedDirs.push(entry);
+    else preservedFiles.add(entry);
+  }
 
   return staged.split('\0')
     .filter(path => path !== '')
     .filter(path => preservedFiles.has(path)
+      || preservedDirs.some(dir => path.startsWith(dir))
       || (!files.has(path) && !dirs.some(dir => path.startsWith(dir))));
 }
 
@@ -2618,7 +2626,7 @@ async function apply() {
       const ownedPaths = pathsToStage.filter((spec) => !spec.startsWith(EXCLUDE_PATHSPEC_PREFIX));
       const unrelated = stagedPathsOutside(
         [...ownedPaths, ...materializedSkillEntrypoints],
-        preservedPaths,
+        keptFromCheckout,
       );
       usedIndexCommit = unrelated.length === 0;
       if (usedIndexCommit) {
