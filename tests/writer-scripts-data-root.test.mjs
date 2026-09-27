@@ -25,10 +25,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, realpathSync, copyFileSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, rmSync, existsSync, realpathSync, copyFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { linkNodeModules } from './helpers.mjs';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -164,7 +165,7 @@ const CLOSURE = {
   ],
 };
 
-function markerFixture(script) {
+function markerFixture(t, script) {
   const dir = realpathSync(mkdtempSync(join(tmpdir(), 'career-ops-marker-')));
   const codeRoot = join(dir, 'code');
   const dataRoot = join(dir, 'data');
@@ -175,7 +176,12 @@ function markerFixture(script) {
   for (const file of CLOSURE[script]) copyFileSync(join(ROOT, file), join(codeRoot, file));
   // generate-pdf.mjs imports playwright at module scope, so without this the
   // child dies before it can print anything and the assertions say nothing.
-  try { symlinkSync(join(ROOT, 'node_modules'), join(codeRoot, 'node_modules'), 'dir'); } catch { /* already there */ }
+  const depsReason = linkNodeModules(codeRoot, ROOT);
+  if (depsReason) {
+    markerCleanup({ dir });
+    t.skip(depsReason);
+    return { dir, codeRoot, dataRoot, skipped: true };
+  }
 
   // The marker: rule 3. No CAREER_OPS_* variable is set when this is used.
   writeFileSync(join(codeRoot, '.career-ops-data'), `${dataRoot}\n`);
@@ -212,8 +218,9 @@ function runFromCodeRoot(f, script, args) {
 
 const markerCleanup = (f) => rmSync(f.dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 
-test('set-status honours a .career-ops-data marker, not just CAREER_OPS_ROOT', () => {
-  const f = markerFixture('set-status.mjs');
+test('set-status honours a .career-ops-data marker, not just CAREER_OPS_ROOT', (t) => {
+  const f = markerFixture(t, 'set-status.mjs');
+  if (f.skipped) return;
   try {
     const r = runFromCodeRoot(f, 'set-status.mjs', ['1', 'Interview', '--note', 'marker check']);
     // Positive first. Every assertion below is an ABSENCE, and a child that
@@ -227,8 +234,9 @@ test('set-status honours a .career-ops-data marker, not just CAREER_OPS_ROOT', (
   } finally { markerCleanup(f); }
 });
 
-test('generate-pdf honours a .career-ops-data marker for its workspace boundary', () => {
-  const f = markerFixture('generate-pdf.mjs');
+test('generate-pdf honours a .career-ops-data marker for its workspace boundary', (t) => {
+  const f = markerFixture(t, 'generate-pdf.mjs');
+  if (f.skipped) return;
   try {
     const r = runFromCodeRoot(f, 'generate-pdf.mjs',
       [join(f.dataRoot, 'output', 'cv.html'), join(f.dataRoot, 'output', 'cv.pdf')]);
