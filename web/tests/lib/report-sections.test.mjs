@@ -209,6 +209,11 @@ test("stripCoreMarkers survives a marker the core spells differently later", () 
   assert.equal(out.trim(), "body");
 });
 
+test("stripCoreMarkers leaves content after an unclosed career-ops marker", () => {
+  const md = "<!-- career-ops:draft-answers\nreader-authored comment stays\n";
+  assert.equal(stripCoreMarkers(md), md);
+});
+
 test("splitSections on a marked report keeps the marker out of the content", () => {
   const md = "## G) Posting Legitimacy\nok\n\n## H) Draft Application Answers\n<!-- career-ops:draft-answers -->\n\n**Q:** a\n";
   const { sections } = splitSections(stripCoreMarkers(md));

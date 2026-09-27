@@ -64,7 +64,7 @@ const HEADING_LETTER = /^(?:Block\s+([A-Z])(?:[).:]|\s)|([A-Z])[).:])/i;
  * @returns {string}
  */
 export function stripCoreMarkers(md) {
-  return String(md ?? "").replace(/^[ \t]*<!--\s*career-ops:[\s\S]*?-->[ \t]*\r?\n?/gm, "");
+  return String(md ?? "").replace(/^[ \t]*<!--\s*career-ops:[^\r\n]*-->[ \t]*\r?\n?/gm, "");
 }
 
 /**
