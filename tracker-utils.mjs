@@ -385,10 +385,12 @@ export async function acquireTrackerLock(lockDir, options = {}) {
   // from the definition: waiters woke in lockstep and re-raced, and a caller
   // waiting on a healthy lock being handed round briskly was killed anyway.
   //
-  // There is no separate maxWaitMs knob here, so the ceiling is the same
-  // multiple of timeoutMs the definition defaults to.
+  // There is no separate maxWaitMs knob here, so no hardDeadline is passed and
+  // the policy applies its own ceiling. Writing one out here would put a fourth
+  // copy of that bound in the tree, and a copy that drifts changes retry timing
+  // silently — nothing fails, so nothing reports it (#3895).
   const { backoffMs, holderStillWedged, noteWaiting, ceilingReached } = createLockWaitPolicy(lockDir, {
-    timeoutMs, retryMs, deadline: Date.now() + timeoutMs, hardDeadline: Date.now() + timeoutMs * 10,
+    timeoutMs, retryMs, deadline: Date.now() + timeoutMs,
   });
   for (;;) {
     if (holderStillWedged() || ceilingReached()) break;
@@ -698,8 +700,12 @@ export function writeFileAtomic(path, content) {
  * their aliases. Parsing it here (instead of hardcoding the list) means a new
  * state or alias lands in one file and every consumer follows.
  *
+ * `description` and `terminal` are passed through for callers that EXPLAIN the
+ * states rather than list them (set-status.mjs --help). Both default rather
+ * than throw: an entry omitting them is still a usable state.
+ *
  * @param {string} statesPath - Path to templates/states.yml.
- * @returns {{id:string,label:string,aliases:string[]}[]} Parsed state entries.
+ * @returns {{id:string,label:string,aliases:string[],description:string,terminal:boolean}[]} Parsed state entries.
  */
 export function loadCanonicalStates(statesPath) {
   const doc = yaml.load(readFileSync(statesPath, 'utf-8'));
@@ -710,6 +716,8 @@ export function loadCanonicalStates(statesPath) {
     id: String(s.id ?? ''),
     label: String(s.label ?? ''),
     aliases: Array.isArray(s.aliases) ? s.aliases.map(String) : [],
+    description: String(s.description ?? ''),
+    terminal: s.terminal === true,
   }));
 }
 
